@@ -16,10 +16,14 @@ export default function Home() {
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
 
+    console.log("🚀 Submit button clicked!");
+    console.log("📝 Prompt:", prompt);
+
     setLoading(true);
     setResult(null);
 
     try {
+      console.log("🔄 Calling API /api/init...");
       const response = await fetch("/api/init", {
         method: "POST",
         headers: {
@@ -29,8 +33,15 @@ export default function Home() {
       });
 
       const data = await response.json();
+      console.log("✅ API response received:", data);
+
+      if (data.sandboxUrl) {
+        console.log("🔗 Preview link:", data.sandboxUrl);
+      }
+
       setResult(data);
     } catch (error) {
+      console.error("❌ Error calling API:", error);
       setResult({
         success: false,
         message: "Failed to generate app. Please try again.",

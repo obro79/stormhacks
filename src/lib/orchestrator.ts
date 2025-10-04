@@ -38,6 +38,9 @@ Rules:
 
 export async function buildApp(prompt: string): Promise<BuildResponse> {
   try {
+    console.log('🤖 buildApp function called');
+    console.log('📝 Building app with prompt:', prompt);
+
     const messages: ClaudeMessage[] = [
       {
         role: 'user',
@@ -45,26 +48,35 @@ export async function buildApp(prompt: string): Promise<BuildResponse> {
       },
     ];
 
+    console.log('🧠 Calling Claude API...');
     const response = await callClaude(messages, SYSTEM_PROMPT, {
       maxTokens: 16000,
       temperature: 1,
     });
 
+    console.log('✅ Claude API responded');
+
     const thinking = extractThinkingFromResponse(response);
     const text = extractTextFromResponse(response);
 
     // Parse the response to extract files
+    console.log('📄 Parsing generated files...');
     const files = parseFilesFromResponse(text);
+    console.log(`✅ Generated ${files.length} file(s)`);
 
     // Create Daytona sandbox with the generated files
     let sandboxId: string | undefined;
     let sandboxUrl: string | undefined;
 
     try {
+      console.log('🚀 Deploying to Daytona...');
       sandboxId = await createDaytonaSandbox(files);
+      console.log('✅ Sandbox created:', sandboxId);
+
       sandboxUrl = await getSandboxUrl(sandboxId);
+      console.log('🔗 Preview link ready:', sandboxUrl);
     } catch (error) {
-      console.warn('Failed to create Daytona sandbox:', error);
+      console.warn('⚠️ Failed to create Daytona sandbox:', error);
       // Continue without sandbox - still return the files
     }
 
@@ -77,7 +89,7 @@ export async function buildApp(prompt: string): Promise<BuildResponse> {
       sandboxUrl,
     };
   } catch (error) {
-    console.error('Error building app:', error);
+    console.error('❌ Error building app:', error);
     return {
       success: false,
       files: [],

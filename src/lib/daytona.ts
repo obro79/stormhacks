@@ -13,6 +13,7 @@ export async function createDaytonaSandbox(files: FileChange[]): Promise<string>
   // Create a new sandbox
   const sandbox = await daytona.create();
 
+  console.log('📁 Uploading files to sandbox...');
   // Write all files to the sandbox using uploadFiles
   await sandbox.fs.uploadFiles(
     files.map(file => ({
@@ -20,14 +21,27 @@ export async function createDaytonaSandbox(files: FileChange[]): Promise<string>
       destination: file.path
     }))
   );
+  console.log('✅ Files uploaded');
 
-  // Start a simple HTTP server on port 8000 using a session (for background process)
-  const sessionId = `http-server-${sandbox.id}`;
-  await sandbox.process.createSession(sessionId);
-  await sandbox.process.executeSessionCommand(sessionId, {
-    command: 'python3 -m http.server 8000',
+  // Install dependencies
+  console.log('📦 Installing npm dependencies...');
+  const installSession = `install-${sandbox.id}`;
+  await sandbox.process.createSession(installSession);
+  await sandbox.process.executeSessionCommand(installSession, {
+    command: 'npm install',
+    runAsync: false // Wait for install to complete
+  });
+  console.log('✅ Dependencies installed');
+
+  // Start Next.js dev server on port 3000 using a session (for background process)
+  console.log('🚀 Starting Next.js dev server...');
+  const serverSession = `server-${sandbox.id}`;
+  await sandbox.process.createSession(serverSession);
+  await sandbox.process.executeSessionCommand(serverSession, {
+    command: 'npm run dev',
     runAsync: true
   });
+  console.log('✅ Server started');
 
   return sandbox.id;
 }
@@ -42,8 +56,8 @@ export async function getSandboxUrl(sandboxId: string): Promise<string> {
   // Get sandbox
   const sandbox = await daytona.get(sandboxId);
 
-  // Get preview link for port 8000 where the HTTP server is running
-  const previewLink = await sandbox.getPreviewLink(8000);
+  // Get preview link for port 3000 where the Next.js dev server is running
+  const previewLink = await sandbox.getPreviewLink(3000);
 
   return previewLink.url;
 }
