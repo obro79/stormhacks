@@ -1,5 +1,6 @@
 import { callClaude, extractTextFromResponse, extractThinkingFromResponse } from './api';
 import { BuildResponse, FileChange, ClaudeMessage } from './types';
+import { createDaytonaSandbox, getSandboxUrl } from './daytona';
 
 const SYSTEM_PROMPT = `You are an expert full-stack developer AI assistant that generates complete, production-ready code.
 
@@ -45,7 +46,7 @@ export async function buildApp(prompt: string): Promise<BuildResponse> {
     ];
 
     const response = await callClaude(messages, SYSTEM_PROMPT, {
-      maxTokens: 8000,
+      maxTokens: 16000,
       temperature: 1,
     });
 
@@ -55,11 +56,25 @@ export async function buildApp(prompt: string): Promise<BuildResponse> {
     // Parse the response to extract files
     const files = parseFilesFromResponse(text);
 
+    // Create Daytona sandbox with the generated files
+    let sandboxId: string | undefined;
+    let sandboxUrl: string | undefined;
+
+    try {
+      sandboxId = await createDaytonaSandbox(files);
+      sandboxUrl = await getSandboxUrl(sandboxId);
+    } catch (error) {
+      console.warn('Failed to create Daytona sandbox:', error);
+      // Continue without sandbox - still return the files
+    }
+
     return {
       success: true,
       files,
       thinking,
-      message: `Generated ${files.length} file(s)`,
+      message: `Generated ${files.length} file(s)${sandboxUrl ? ` - Preview at: ${sandboxUrl}` : ''}`,
+      sandboxId,
+      sandboxUrl,
     };
   } catch (error) {
     console.error('Error building app:', error);
@@ -122,7 +137,7 @@ export async function editApp(
     ];
 
     const response = await callClaude(messages, SYSTEM_PROMPT, {
-      maxTokens: 8000,
+      maxTokens: 16000,
       temperature: 1,
     });
 

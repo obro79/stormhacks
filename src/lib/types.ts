@@ -13,6 +13,8 @@ export interface BuildResponse {
   files: FileChange[];
   message?: string;
   thinking?: string;
+  sandboxId?: string;
+  sandboxUrl?: string;
 }
 
 export interface ClaudeMessage {
