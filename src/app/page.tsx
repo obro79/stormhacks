@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Upload, ArrowRight } from "lucide-react";
+import { Mic, ArrowRight, Plus } from "lucide-react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -41,27 +41,56 @@ export default function Home() {
   };
 
   const featuredProjects = [
-    { name: "Landing Page", color: "bg-gradient-to-br from-gray-600 to-gray-800" },
-    { name: "Website", color: "bg-gradient-to-br from-indigo-500 to-purple-600" },
-    { name: "Portfolio", color: "bg-gradient-to-br from-orange-500 to-red-600" },
-    { name: "Blog", color: "bg-gradient-to-br from-gray-500 to-gray-700" },
-    { name: "Ecommerce", color: "bg-gradient-to-br from-blue-500 to-cyan-600" },
-    { name: "Photography", color: "bg-gradient-to-br from-orange-600 to-amber-700" },
+    { name: "Landing Page", gradient: "linear-gradient(135deg, #4B5563 0%, #1F2937 100%)", dotColor: "#4B5563" },
+    { name: "Website", gradient: "linear-gradient(135deg, #6366F1 0%, #7C3AED 100%)", dotColor: "#6366F1" },
+    { name: "Portfolio", gradient: "linear-gradient(135deg, #F97316 0%, #DC2626 100%)", dotColor: "#F97316" },
+    { name: "Blog", gradient: "linear-gradient(135deg, #6B7280 0%, #374151 100%)", dotColor: "#6B7280" },
+    { name: "Ecommerce", gradient: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)", dotColor: "#3B82F6" },
+    { name: "Photography", gradient: "linear-gradient(135deg, #EA580C 0%, #D97706 100%)", dotColor: "#EA580C" },
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen text-white" style={{ background: '#222222' }}>
       {/* Header */}
       <header className="flex items-center justify-between px-8 py-6">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white rounded" />
-          <span className="text-xl font-medium">Echome</span>
+          <span className="text-xl font-medium">EchoMe</span>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="text-white hover:text-white/80">
+          <Button
+            variant="ghost"
+            className="hover:text-white/80"
+            style={{
+              display: 'flex',
+              width: '5.4375rem',
+              height: '2.8125rem',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: '#FFF',
+              textAlign: 'center',
+              fontFamily: 'Geist',
+              fontSize: '1rem',
+              fontStyle: 'normal',
+              fontWeight: 500,
+              lineHeight: 'normal',
+              letterSpacing: '-0.03rem'
+            }}
+          >
             Login
           </Button>
-          <Button className="bg-white text-black hover:bg-white/90">
+          <Button
+            className="bg-white text-black hover:bg-white/90"
+            style={{
+              width: '7.625rem',
+              height: '2.8125rem',
+              fontSize: '1rem',
+              fontWeight: 500,
+              letterSpacing: '-0.03rem',
+              fontFamily: 'var(--font-geist-sans)'
+            }}
+          >
             Get Started
           </Button>
         </div>
@@ -71,48 +100,126 @@ export default function Home() {
       <main className="max-w-4xl mx-auto px-8 pt-20 pb-32">
         <div className="text-center space-y-6">
           <h1
-            className="text-7xl font-medium tracking-[-0.2rem]"
-            style={{ fontFamily: 'var(--font-geist-sans)' }}
+            style={{
+              color: '#FFF',
+              textAlign: 'center',
+              fontFamily: 'Geist',
+              fontSize: '4rem',
+              fontStyle: 'normal',
+              fontWeight: 500,
+              lineHeight: 'normal',
+              letterSpacing: '-0.2rem'
+            }}
           >
             Build applications by talking.
           </h1>
 
-          <div className="text-xl text-gray-400 space-y-1">
+          <div
+            className="space-y-1 mx-auto"
+            style={{
+              width: '52.25rem',
+              color: '#FFF',
+              textAlign: 'center',
+              fontFamily: 'Geist',
+              fontSize: '1.5rem',
+              fontStyle: 'normal',
+              fontWeight: 600,
+              lineHeight: 'normal',
+              letterSpacing: '-0.045rem'
+            }}
+          >
             <p>Describe what you want.</p>
             <p>Watch it come to life.</p>
             <p>No typing required.</p>
           </div>
 
           {/* Input Area */}
-          <div className="pt-8">
-            <div className="bg-zinc-900 rounded-2xl p-4 flex items-center gap-3">
-              <input
-                type="text"
+          <div className="pt-8 flex justify-center">
+            <div
+              className="relative p-4"
+              style={{
+                width: '38.75rem',
+                height: '8.8125rem',
+                borderRadius: '1.5625rem',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                background: '#282924'
+              }}
+            >
+              <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe your app. For example: A task tracker with dark mode and Google login."
-                className="flex-1 bg-transparent border-0 focus:outline-none text-white placeholder:text-gray-500 text-sm"
+                className="w-full h-full bg-transparent border-0 outline-none text-white placeholder:text-gray-500 text-sm resize-none"
+                style={{ outline: 'none', boxShadow: 'none' }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && e.ctrlKey) {
                     e.preventDefault();
                     handleSubmit();
                   }
                 }}
               />
-              <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-                  <Mic className="w-5 h-5 text-gray-400" />
+              <div className="absolute bottom-4 left-4">
+                <button
+                  className="hover:opacity-80 rounded-full transition-colors flex items-center justify-center"
+                  style={{
+                    width: '1.875rem',
+                    height: '1.875rem',
+                    flexShrink: 0,
+                    background: '#3C3C3C'
+                  }}
+                >
+                  <Plus
+                    style={{
+                      width: '1.25rem',
+                      height: '1.25rem',
+                      flexShrink: 0,
+                      color: '#FFFFFF',
+                      strokeWidth: 1.5
+                    }}
+                  />
                 </button>
-                <button className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-                  <Upload className="w-5 h-5 text-gray-400" />
+              </div>
+              <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                <button
+                  className="hover:opacity-80 rounded-full transition-colors flex items-center justify-center"
+                  style={{
+                    width: '1.875rem',
+                    height: '1.875rem',
+                    flexShrink: 0,
+                    background: '#3C3C3C'
+                  }}
+                >
+                  <Mic
+                    style={{
+                      width: '1.25rem',
+                      height: '1.25rem',
+                      flexShrink: 0,
+                      color: '#FFFFFF',
+                      strokeWidth: 1.5
+                    }}
+                  />
                 </button>
                 <Button
                   onClick={handleSubmit}
                   disabled={!prompt.trim() || loading}
                   size="icon"
-                  className="rounded-lg bg-zinc-800 hover:bg-zinc-700"
+                  className="rounded-full hover:opacity-80 flex items-center justify-center text-white"
+                  style={{
+                    width: '1.875rem',
+                    height: '1.875rem',
+                    flexShrink: 0,
+                    background: '#3C3C3C'
+                  }}
                 >
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight
+                    className="text-white"
+                    style={{
+                      width: '1.25rem',
+                      height: '1.25rem',
+                      flexShrink: 0,
+                      strokeWidth: 1.5
+                    }}
+                  />
                 </Button>
               </div>
             </div>
@@ -148,16 +255,50 @@ export default function Home() {
       {/* Featured Section */}
       <section className="max-w-7xl mx-auto px-8 py-16">
         <h2 className="text-2xl font-medium mb-8">Featured</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style={{ gap: '2.5rem' }}>
           {featuredProjects.map((project, index) => (
             <div
               key={index}
               className="group cursor-pointer"
             >
-              <div className={`${project.color} aspect-video rounded-xl mb-4 transition-transform group-hover:scale-105`} />
+              <div
+                className="mb-4 transition-transform group-hover:scale-105 w-full"
+                style={{
+                  aspectRatio: '440 / 314',
+                  flexShrink: 0,
+                  borderRadius: '0.9375rem',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: `${project.gradient}, lightgray 50% / cover no-repeat`
+                }}
+              />
               <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${project.color}`} />
-                <span className="text-sm">{project.name}</span>
+                <div
+                  className="rounded-full"
+                  style={{
+                    width: '2.5rem',
+                    height: '2.5rem',
+                    flexShrink: 0,
+                    background: project.dotColor
+                  }}
+                />
+                <div
+                  style={{
+                    display: 'flex',
+                    width: '11rem',
+                    height: '3.125rem',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    color: '#FFF',
+                    fontFamily: 'Geist',
+                    fontSize: '1.125rem',
+                    fontStyle: 'normal',
+                    fontWeight: 600,
+                    lineHeight: 'normal'
+                  }}
+                >
+                  {project.name}
+                </div>
               </div>
             </div>
           ))}
