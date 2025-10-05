@@ -20,6 +20,7 @@ export default function BuilderPage() {
     Array<{ type: string; content: string }>
   >([]);
   const [iframeLoading, setIframeLoading] = useState(true);
+  const [isThinking, setIsThinking] = useState(false);
 
   useEffect(() => {
     // Read URL params
@@ -136,6 +137,71 @@ export default function BuilderPage() {
     }
   }, [searchParams]);
 
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || isThinking) return;
+
+    const userMessage = chatInput;
+    console.log('💬 Sending message:', userMessage);
+
+    // Add user message to chat immediately
+    setMessages((prev) => [
+      ...prev,
+      {
+        type: "user",
+        content: userMessage,
+      },
+    ]);
+    setChatInput("");
+    setIsThinking(true);
+
+    try {
+      // Call chat API
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          sandboxId: sandboxUrl,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Add Claude's response to chat
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: "assistant",
+            content: data.response,
+          },
+        ]);
+      } else {
+        // Show error in chat
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: "assistant",
+            content: `Error: ${data.error || "Failed to get response"}`,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("❌ Chat error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "assistant",
+          content: "Sorry, I encountered an error. Please try again.",
+        },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-[#222]">
       {/* Top Header */}
@@ -232,6 +298,11 @@ export default function BuilderPage() {
                 )}
               </div>
             ))}
+            {isThinking && (
+              <div className="text-[#F8F8F8] font-[Geist] font-medium text-sm italic opacity-70">
+                Thinking...
+              </div>
+            )}
           </div>
 
           {/* Input Area */}
@@ -240,8 +311,15 @@ export default function BuilderPage() {
               <textarea
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Talk with EchoMe."
                 className="flex-1 w-full h-full border-0 outline-none text-white placeholder:text-white font-semibold text-sm resize-none"
+                disabled={isThinking}
               />
 
               {/* Absolute Buttons */}
@@ -250,7 +328,13 @@ export default function BuilderPage() {
                   <Mic className="w-5 h-5 text-white" strokeWidth={1.5} />
                 </button>
 
-                <button className="hover:opacity-80 rounded-full flex items-center justify-center w-[1.875rem] h-[1.875rem] bg-[#3C3C3C]">
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!chatInput.trim() || isThinking}
+                  className={`hover:opacity-80 rounded-full flex items-center justify-center w-[1.875rem] h-[1.875rem] bg-[#3C3C3C] ${
+                    (!chatInput.trim() || isThinking) ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
                   <ArrowUp className="w-5 h-5 text-white" strokeWidth={1.5} />
                 </button>
               </div>

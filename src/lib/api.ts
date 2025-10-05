@@ -34,10 +34,6 @@ export async function callClaude(
         role: msg.role,
         content: typeof msg.content === 'string' ? msg.content : msg.content,
       })),
-      thinking: {
-        type: 'enabled',
-        budget_tokens: 10000,
-      },
     }),
   });
 
