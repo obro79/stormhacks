@@ -60,10 +60,22 @@ export default function BuilderPage() {
         ]);
 
         // Check if complete
-        if (data.message.startsWith("COMPLETE:")) {
-          const url = data.message.replace("COMPLETE:", "");
-          setSandboxUrl(url);
-          setIframeLoading(true);
+        if (data.message.startsWith('COMPLETE:')) {
+          const url = data.message.replace('COMPLETE:', '');
+
+          // Fetch with skip-warning header first to bypass Daytona warning page
+          fetch(url, {
+            method: 'HEAD',
+            headers: {
+              'X-Daytona-Skip-Preview-Warning': 'true'
+            }
+          }).catch(() => {
+            // Ignore errors, just trying to set the cookie/bypass warning
+          }).finally(() => {
+            setSandboxUrl(url);
+            setIframeLoading(true);
+          });
+
           eventSource.close();
         } else if (data.message.startsWith("ERROR:")) {
           eventSource.close();
@@ -91,9 +103,20 @@ export default function BuilderPage() {
         });
       }
       setMessages(newMessages);
-      setSandboxUrl(url);
-      setIframeLoading(true);
-      console.log("🔗 Loading preview:", url);
+
+      // Fetch with skip-warning header first to bypass Daytona warning page
+      fetch(url, {
+        method: 'HEAD',
+        headers: {
+          'X-Daytona-Skip-Preview-Warning': 'true'
+        }
+      }).catch(() => {
+        // Ignore errors, just trying to set the cookie/bypass warning
+      }).finally(() => {
+        setSandboxUrl(url);
+        setIframeLoading(true);
+        console.log("🔗 Loading preview:", url);
+      });
     }
 
     // Default demo if no params
