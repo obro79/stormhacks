@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function Home() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,8 +51,13 @@ export default function Home() {
     }
 
     console.log("Signup success:", data);
-    setMessage("Signup successful! Check your email for confirmation.");
+    setMessage("Signup successful! Redirecting...");
     setLoading(false);
+
+    // Redirect to homepage after successful signup
+    setTimeout(() => {
+      router.push("/");
+    }, 1000);
   };
 
   const handleGoogleSignUp = async () => {

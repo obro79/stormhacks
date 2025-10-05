@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,8 +52,8 @@ export default function Home() {
     setMessage("Successfully signed in!");
     setLoading(false);
 
-    // Optional: redirect after login (Next.js example)
-    // window.location.href = "/dashboard";
+    // Redirect to homepage after successful login
+    router.push("/");
   };
 
   const handleGoogleSignIn = async () => {

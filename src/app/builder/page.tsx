@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { Mic, ArrowUp, ExternalLink, Download } from "lucide-react";
 
@@ -12,6 +13,8 @@ import Image from "next/image";
 export default function BuilderPage() {
   // Using dynamic route to avoid SSG issues with searchParams
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "share">(
     "preview"
   );
@@ -27,6 +30,30 @@ export default function BuilderPage() {
   const [deployMessage, setDeployMessage] = useState<string | null>(null);
   const [githubUrl, setGithubUrl] = useState<string | null>(null);
   const [projectPrompt, setProjectPrompt] = useState<string>("");
+
+  // Protected route - redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/sign-in');
+    }
+  }, [user, loading, router]);
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-900 text-white">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   useEffect(() => {
     // Read URL params

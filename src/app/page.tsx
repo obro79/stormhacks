@@ -4,12 +4,14 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, ArrowUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [_loading, _setLoading] = useState(false);
   const [result, _setResult] = useState<{
@@ -138,34 +140,40 @@ export default function Home() {
 
   const featuredProjects = [
     {
-      name: "Landing Page",
-      gradient: "linear-gradient(135deg, #4B5563 0%, #1F2937 100%)",
-      dotColor: "#4B5563",
+      name: "Typing Test",
+      gradient: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
+      dotColor: "#F59E0B",
+      url: "https://echome-make-typing-test-17596583579.vercel.app",
     },
     {
-      name: "Website",
-      gradient: "linear-gradient(135deg, #6366F1 0%, #7C3AED 100%)",
-      dotColor: "#6366F1",
+      name: "Pomodoro Timer",
+      gradient: "linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)",
+      dotColor: "#8B5CF6",
+      url: "https://echome-build-pomodoro-timer-1759657.vercel.app",
     },
     {
-      name: "Portfolio",
-      gradient: "linear-gradient(135deg, #F97316 0%, #DC2626 100%)",
-      dotColor: "#F97316",
-    },
-    {
-      name: "Blog",
-      gradient: "linear-gradient(135deg, #6B7280 0%, #374151 100%)",
-      dotColor: "#6B7280",
-    },
-    {
-      name: "Ecommerce",
-      gradient: "linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%)",
+      name: "Battleship",
+      gradient: "linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)",
       dotColor: "#3B82F6",
+      url: "https://echome-build-battle-ship-1759657318.vercel.app",
     },
     {
-      name: "Photography",
-      gradient: "linear-gradient(135deg, #EA580C 0%, #D97706 100%)",
-      dotColor: "#EA580C",
+      name: "Finance Tracker",
+      gradient: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
+      dotColor: "#EF4444",
+      url: "https://echome-personal-finance-tracker-175.vercel.app",
+    },
+    {
+      name: "Hello World",
+      gradient: "linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)",
+      dotColor: "#A78BFA",
+      url: "https://echome-build-hello-world-1759656585.vercel.app",
+    },
+    {
+      name: "Tic Tac Toe",
+      gradient: "linear-gradient(135deg, #93C5FD 0%, #60A5FA 100%)",
+      dotColor: "#93C5FD",
+      url: "https://echome-build-game-1759657580564.vercel.app",
     },
   ];
 
@@ -178,19 +186,35 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/sign-in"
-            className="px-6 py-2 inline-flex items-center justify-center bg-[#282924] border border-[rgba(255,255,255,0.1)] text-white text-[14px] rounded font-medium tracking-tight hover:opacity-75"
-          >
-            Login
-          </Link>
+          {user ? (
+            <>
+              <span className="px-3 py-2 text-white text-[14px]">
+                {user.email}
+              </span>
+              <Button
+                onClick={signOut}
+                className="px-6 py-2 inline-flex items-center justify-center bg-[#282924] border border-[rgba(255,255,255,0.1)] text-white text-[14px] rounded font-medium tracking-tight hover:opacity-75"
+              >
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/sign-in"
+                className="px-6 py-2 inline-flex items-center justify-center bg-[#282924] border border-[rgba(255,255,255,0.1)] text-white text-[14px] rounded font-medium tracking-tight hover:opacity-75"
+              >
+                Login
+              </Link>
 
-          <Link
-            href="/sign-up"
-            className="px-3 py-2 inline-flex items-center justify-center bg-white text-black text-[14px] rounded font-medium tracking-tight hover:opacity-75"
-          >
-            Get Started
-          </Link>
+              <Link
+                href="/sign-up"
+                className="px-3 py-2 inline-flex items-center justify-center bg-white text-black text-[14px] rounded font-medium tracking-tight hover:opacity-75"
+              >
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
       </header>
       {/* Hero Section */}
@@ -340,9 +364,15 @@ export default function Home() {
         {/* Featured Projects */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredProjects.map((project, index) => (
-            <div key={index} className="group cursor-pointer">
+            <a
+              key={index}
+              href={project.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group cursor-pointer block"
+            >
               <div
-                className="mb-4 transition-transform group-hover:scale-101 w-full"
+                className="mb-4 transition-transform group-hover:scale-105 w-full"
                 style={{
                   aspectRatio: "440 / 314",
                   flexShrink: 0,
@@ -362,7 +392,7 @@ export default function Home() {
                   {project.name}
                 </div>
               </div>
-            </div>
+            </a>
           ))}
         </div>
 
