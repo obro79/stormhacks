@@ -174,17 +174,7 @@ export default function Home() {
       {/* Header */}
       <header className="p-2 flex items-center justify-between">
         <div className="flex items-center justify-center">
-          <div className="w-10 h-10">
-            <Link href="/">
-              <Image
-                src="/microphone.webp"
-                alt="EchoMe Logo"
-                height={50}
-                width={50}
-              />
-            </Link>
-          </div>
-          <h1 className="text-xl font-semibold tracking-tight">EchoMe</h1>
+          <h1 className="ml-2 text-xl font-semibold tracking-tight">EchoMe</h1>
         </div>
 
         <div className="flex items-center gap-2">
@@ -203,11 +193,27 @@ export default function Home() {
           </Link>
         </div>
       </header>
-
       {/* Hero Section */}
-      <main className="flex flex-col items-center justify-center h-[75vh] max-w-4xl mx-auto px-8 text-center">
-        <div className="text-center space-y-6">
-          <h2 className="text-6xl font-semibold tracking-tight text-center leading-none">
+      <main className="relative flex flex-col items-center justify-center h-[75vh] max-w-4xl mx-auto px-8 text-center">
+        {/* make this container RELATIVE so the absolute mic will center inside it */}
+        <div className="relative text-center space-y-6">
+          {/* centered absolute element behind the heading */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 transform w-[250px] h-[250px] pointer-events-none opacity-10 "
+            aria-hidden="true"
+          >
+            <Link href="/">
+              <Image
+                src="/microphone.webp"
+                alt="EchoMe Logo"
+                height={250}
+                width={250}
+                className="block"
+              />
+            </Link>
+          </div>
+
+          <h2 className="pb-10 relative z-10 text-6xl font-semibold tracking-tight leading-none">
             Build applications by talking
           </h2>
 
@@ -218,7 +224,7 @@ export default function Home() {
           </div> */}
 
           {/* Input Area */}
-          <div className="pt-6 flex justify-center">
+          <div className="flex justify-center">
             <div
               className="relative p-4 rounded"
               style={{
