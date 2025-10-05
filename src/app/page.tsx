@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Upload, ArrowRight, Plus } from "lucide-react";
 
 import Link from "next/link";
 
 export default function Home() {
+  const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
@@ -27,36 +29,28 @@ export default function Home() {
     console.log("🚀 Submit button clicked!");
     console.log("📝 Prompt:", prompt);
 
-    setLoading(true);
-    setResult(null);
+    // Generate a unique session ID for this build
+    const sessionId = `build-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    console.log("🆔 Session ID:", sessionId);
 
-    try {
-      console.log("🔄 Calling API /api/init...");
-      const response = await fetch("/api/init", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt }),
-      });
+    // Immediately redirect to builder page
+    const params = new URLSearchParams({
+      prompt: prompt,
+      sessionId: sessionId,
+      status: "building"
+    });
+    router.push(`/builder?${params.toString()}`);
 
-      const data = await response.json();
-      console.log("✅ API response received:", data);
-
-      if (data.sandboxUrl) {
-        console.log("🔗 Preview link:", data.sandboxUrl);
-      }
-
-      setResult(data);
-    } catch (error) {
-      console.error("❌ Error calling API:", error);
-      setResult({
-        success: false,
-        message: "Failed to generate app. Please try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Start the build process in the background
+    fetch("/api/build-stream", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt, sessionId }),
+    }).catch(error => {
+      console.error("❌ Error starting build:", error);
+    });
   };
 
     // Voice recording functionality
