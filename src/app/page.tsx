@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, ArrowRight, Plus } from "lucide-react";
+import { Mic, MicOff, Upload, ArrowRight, Plus } from "lucide-react";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -12,6 +12,12 @@ export default function Home() {
     message?: string;
     sandboxUrl?: string;
   } | null>(null);
+  
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
@@ -50,6 +56,83 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+    // Voice recording functionality
+    const startRecording = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        chunksRef.current = [];
+  
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            chunksRef.current.push(event.data);
+          }
+        };
+  
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+          await transcribeAudio(audioBlob);
+          
+          // Stop all tracks to release the microphone
+          stream.getTracks().forEach(track => track.stop());
+        };
+  
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error("Error starting recording:", error);
+        alert("Could not access microphone. Please check permissions.");
+      }
+    };
+  
+    const stopRecording = () => {
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+        setIsProcessing(true);
+      }
+    };
+  
+    const transcribeAudio = async (audioBlob: Blob) => {
+      try {
+        const formData = new FormData();
+        formData.append("file", audioBlob, "audio.webm");
+        formData.append("model_id", "scribe_v1");
+  
+        const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+          method: "POST",
+          headers: {
+            "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
+          },
+          body: formData,
+        });
+  
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+  
+        const result = await response.json();
+        const transcript = result.text || "";
+        
+        // Add the transcript to the existing prompt
+        setPrompt(prev => prev ? `${prev} ${transcript}` : transcript);
+      } catch (error) {
+        console.error("Error transcribing audio:", error);
+        alert("Failed to transcribe audio. Please try again.");
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+  
+    const handleMicClick = () => {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    };
 
   const featuredProjects = [
     { name: "Landing Page", gradient: "linear-gradient(135deg, #4B5563 0%, #1F2937 100%)", dotColor: "#4B5563" },
@@ -191,25 +274,25 @@ export default function Home() {
                 </button>
               </div>
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                <button
-                  className="hover:opacity-80 rounded-full transition-colors flex items-center justify-center"
-                  style={{
-                    width: '1.875rem',
-                    height: '1.875rem',
-                    flexShrink: 0,
-                    background: '#3C3C3C'
-                  }}
-                >
-                  <Mic
-                    style={{
-                      width: '1.25rem',
-                      height: '1.25rem',
-                      flexShrink: 0,
-                      color: '#FFFFFF',
-                      strokeWidth: 1.5
-                    }}
-                  />
-                </button>
+              <Button
+                onClick={handleMicClick}
+                disabled={loading || isProcessing}
+                variant={isRecording ? "destructive" : "ghost"}
+                size="sm"
+                className={`absolute right-3 top-3 ${
+                  isRecording 
+                    ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" 
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                {isProcessing ? (
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                ) : isRecording ? (
+                  <MicOff className="w-4 h-4" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
+              </Button>
                 <Button
                   onClick={handleSubmit}
                   disabled={!prompt.trim() || loading}
