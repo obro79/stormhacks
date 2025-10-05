@@ -15,7 +15,7 @@ export default function BuilderPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"preview" | "code" | "share">(
+  const [activeTab, setActiveTab] = useState<"preview" | "code">(
     "preview"
   );
   const [chatInput, setChatInput] = useState("");
@@ -30,6 +30,10 @@ export default function BuilderPage() {
   const [deployMessage, setDeployMessage] = useState<string | null>(null);
   const [githubUrl, setGithubUrl] = useState<string | null>(null);
   const [projectPrompt, setProjectPrompt] = useState<string>("");
+  const [codeFiles, setCodeFiles] = useState<Array<{ path: string; content: string; operation: string }>>([]);
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [isCodeLoading, setIsCodeLoading] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   // Protected route - redirect to sign-in if not authenticated
   useEffect(() => {
@@ -165,6 +169,36 @@ export default function BuilderPage() {
     }
   }, [searchParams]);
 
+  // Load files when Code tab opens
+  useEffect(() => {
+    const loadFiles = async () => {
+      if (activeTab !== "code" || !sessionId) return;
+      setIsCodeLoading(true);
+      setCodeError(null);
+      try {
+        const res = await fetch(`/api/files?sessionId=${sessionId}`);
+        if (!res.ok) {
+          throw new Error("Failed to load files");
+        }
+        const data = await res.json();
+        if (data.success && Array.isArray(data.files)) {
+          setCodeFiles(data.files);
+          if (data.files.length > 0) {
+            setSelectedFilePath(data.files[0].path);
+          } else {
+            setSelectedFilePath(null);
+          }
+        } else {
+          throw new Error(data.message || "Failed to load files");
+        }
+      } catch (e) {
+        setCodeError(e instanceof Error ? e.message : "Unknown error");
+      } finally {
+        setIsCodeLoading(false);
+      }
+    };
+    loadFiles();
+  }, [activeTab, sessionId]);
   // Show loading state while checking auth
   if (loading) {
     return (
@@ -387,16 +421,6 @@ export default function BuilderPage() {
           >
             Code
           </button>
-          <button
-            onClick={() => setActiveTab("share")}
-            className={`px-4 py-2 rounded transition-colors ${
-              activeTab === "share"
-                ? "bg-[#282924] border border-[rgba(255,255,255,0.15)] text-white"
-                : "text-gray-400 hover:text-white"
-            } text-sm font-medium`}
-          >
-            Share
-          </button>
         </div>
 
         {/* Spacer to push Deploy button to the right */}
@@ -587,16 +611,63 @@ export default function BuilderPage() {
               </div>
             )}
             {activeTab === "code" && (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-white font-semibold">
-                  Code view will load here
-                </div>
-              </div>
-            )}
-            {activeTab === "share" && (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-white font-semibold">
-                  Share options will load here
+              <div className="relative w-full h-full">
+                {/* Overlay panel over sandbox area */}
+                <div className="absolute inset-0 bg-[#1A1A1A]/95 backdrop-blur-sm border border-[rgba(255,255,255,0.15)]">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-[rgba(255,255,255,0.1)]">
+                    <div className="text-white font-semibold text-sm">Project Files</div>
+                    <button
+                      onClick={() => setActiveTab("preview")}
+                      className="text-gray-300 hover:text-white text-sm px-2 py-1 rounded border border-[rgba(255,255,255,0.15)]"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  {/* Body */}
+                  <div className="flex h-[calc(100%-2.5rem)]">{/* subtract header height */}
+                    {/* File list */}
+                    <div className="w-64 border-r border-[rgba(255,255,255,0.1)] overflow-auto">
+                      {isCodeLoading && (
+                        <div className="p-3 text-gray-400 text-sm">Loading files…</div>
+                      )}
+                      {codeError && (
+                        <div className="p-3 text-red-400 text-sm">{codeError}</div>
+                      )}
+                      {!isCodeLoading && !codeError && codeFiles.length === 0 && (
+                        <div className="p-3 text-gray-400 text-sm">No files to display</div>
+                      )}
+                      <ul className="text-sm">
+                        {codeFiles.map((f) => (
+                          <li key={f.path}>
+                            <button
+                              onClick={() => setSelectedFilePath(f.path)}
+                              className={`w-full text-left px-3 py-2 truncate hover:bg-[#2F2F2F] ${
+                                selectedFilePath === f.path
+                                  ? "bg-[#2A2A2A] text-white"
+                                  : "text-gray-300"
+                              }`}
+                              title={f.path}
+                            >
+                              {f.path}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {/* Code viewer */}
+                    <div className="flex-1 overflow-auto">
+                      {selectedFilePath ? (
+                        <pre className="p-4 text-[13px] leading-5 text-gray-200 whitespace-pre overflow-auto">
+                          {codeFiles.find((f) => f.path === selectedFilePath)?.content || ""}
+                        </pre>
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-gray-400 text-sm">
+                          Select a file to view its code
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
