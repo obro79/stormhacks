@@ -292,25 +292,31 @@ export default function Home() {
                 </button>
               </div>
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
-              <Button
-                onClick={handleMicClick}
-                disabled={loading || isProcessing}
-                variant={isRecording ? "destructive" : "ghost"}
-                size="sm"
-                className={`absolute right-3 top-3 ${
-                  isRecording 
-                    ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" 
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                {isProcessing ? (
-                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                ) : isRecording ? (
-                  <MicOff className="w-4 h-4" />
-                ) : (
-                  <Mic className="w-4 h-4" />
-                )}
-              </Button>
+                <Button
+                  onClick={handleMicClick}
+                  disabled={loading || isProcessing}
+                  variant={isRecording ? "destructive" : "ghost"}
+                  size="sm"
+                  className={`hover:opacity-80 rounded-full transition-colors flex items-center justify-center text-white ${
+                    isRecording 
+                      ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" 
+                      : "hover:bg-white"
+                  }`}
+                  style={{
+                    width: "1.875rem",
+                    height: "1.875rem",
+                    flexShrink: 0,
+                    background: "#3C3C3C",
+                  }}
+                >
+                  {isProcessing ? (
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  ) : isRecording ? (
+                    <MicOff className="w-4 h-4" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
+                </Button>
                 <Button
                   onClick={handleSubmit}
                   disabled={!prompt.trim() || loading}
