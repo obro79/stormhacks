@@ -42,23 +42,7 @@ export default function BuilderPage() {
     }
   }, [user, loading, router]);
 
-  // Show loading state while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-900 text-white">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render anything if not authenticated (will redirect)
-  if (!user) {
-    return null;
-  }
-
+  // Read URL params and setup SSE
   useEffect(() => {
     // Read URL params
     const prompt = searchParams.get("prompt");
@@ -215,6 +199,22 @@ export default function BuilderPage() {
     };
     loadFiles();
   }, [activeTab, sessionId]);
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-900 text-white">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   const handleDownload = async () => {
     if (!sessionId) {
