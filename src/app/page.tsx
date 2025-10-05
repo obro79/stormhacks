@@ -205,17 +205,17 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <main className="max-w-4xl mx-auto px-8 pt-20 pb-32">
+      <main className="flex flex-col items-center justify-center h-[75vh] max-w-4xl mx-auto px-8 text-center">
         <div className="text-center space-y-6">
           <h2 className="text-6xl font-semibold tracking-tight text-center leading-none">
             Build applications by talking
           </h2>
 
-          <div className="mx-auto text-white text-2xl text-align font-medium tracking-tight leading-none">
+          {/* <div className="mx-auto text-white text-2xl text-align font-medium tracking-tight leading-none">
             <p>Describe what you want</p>
             <p>Watch it come to life</p>
             <p>No typing required</p>
-          </div>
+          </div> */}
 
           {/* Input Area */}
           <div className="pt-6 flex justify-center">
@@ -326,16 +326,17 @@ export default function Home() {
       </main>
 
       {/* Featured Section */}
-      <section className="max-w-7xl mx-auto px-8 py-16">
-        <h2 className="text-2xl font-medium mb-8">Featured</h2>
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-          style={{ gap: "2.5rem" }}
-        >
+      <section className="m-2 p-4 bg-[#282924] border border-[rgba(255,255,255,0.15)] rounded">
+        <h2 className="text-xl font-medium mb-8 tracking-tight">
+          Featured Projects
+        </h2>
+
+        {/* Featured Projects */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredProjects.map((project, index) => (
             <div key={index} className="group cursor-pointer">
               <div
-                className="mb-4 transition-transform group-hover:scale-105 w-full"
+                className="mb-4 transition-transform group-hover:scale-101 w-full"
                 style={{
                   aspectRatio: "440 / 314",
                   flexShrink: 0,
@@ -346,36 +347,23 @@ export default function Home() {
               />
               <div className="flex items-center gap-2">
                 <div
-                  className="rounded-full"
+                  className="h-4 w-4 ml-0.5 rounded-full shrink-0"
                   style={{
-                    width: "2.5rem",
-                    height: "2.5rem",
-                    flexShrink: 0,
                     background: project.dotColor,
                   }}
                 />
-                <div
-                  style={{
-                    display: "flex",
-                    width: "11rem",
-                    height: "3.125rem",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    color: "#FFF",
-                    fontFamily: "Geist",
-                    fontSize: "1.125rem",
-                    fontStyle: "normal",
-                    fontWeight: 600,
-                    lineHeight: "normal",
-                  }}
-                >
+                <div className="font-medium text-white tracking-tight leading-0">
                   {project.name}
                 </div>
               </div>
             </div>
           ))}
         </div>
+
+        {/* More */}
+        <h2 className="mb-8 mt-24 text-sm text-center text-neutral-400 font-semibold tracking-tight">
+          More coming soon...
+        </h2>
       </section>
 
       {/* Footer */}
