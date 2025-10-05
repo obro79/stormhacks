@@ -141,25 +141,25 @@ export default function Home() {
   const featuredProjects = [
     {
       name: "Typing Test",
-      gradient: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
+      image: "/typing.png",
       dotColor: "#F59E0B",
       url: "https://echome-make-typing-test-17596583579.vercel.app",
     },
     {
       name: "Pomodoro Timer",
-      gradient: "linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)",
+      image: "/pomodoro.png",
       dotColor: "#8B5CF6",
       url: "https://echome-build-pomodoro-timer-1759657.vercel.app",
     },
     {
       name: "Battleship",
-      gradient: "linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)",
+      image: "/battleship.png",
       dotColor: "#3B82F6",
       url: "https://echome-build-battle-ship-1759657318.vercel.app",
     },
     {
       name: "Finance Tracker",
-      gradient: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
+      image: "/finance-app.png",
       dotColor: "#EF4444",
       url: "https://echome-personal-finance-tracker-175.vercel.app",
     },
@@ -171,7 +171,7 @@ export default function Home() {
     },
     {
       name: "Tic Tac Toe",
-      gradient: "linear-gradient(135deg, #93C5FD 0%, #60A5FA 100%)",
+      image: "/tictactoe.png",
       dotColor: "#93C5FD",
       url: "https://echome-build-game-1759657580564.vercel.app",
     },
@@ -355,52 +355,64 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Featured Section */}
-      <section className="m-2 p-4 bg-[#282924] border border-[rgba(255,255,255,0.15)] rounded">
-        <h2 className="text-xl font-medium mb-8 tracking-tight">
-          Featured Projects
-        </h2>
+      {/* Featured Section - Only show when not logged in */}
+      {!user && (
+        <section className="m-2 p-4 bg-[#282924] border border-[rgba(255,255,255,0.15)] rounded">
+          <h2 className="text-xl font-medium mb-8 tracking-tight">
+            Featured Projects
+          </h2>
 
-        {/* Featured Projects */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredProjects.map((project, index) => (
-            <a
-              key={index}
-              href={project.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group cursor-pointer block"
-            >
-              <div
-                className="mb-4 transition-transform group-hover:scale-105 w-full"
-                style={{
-                  aspectRatio: "440 / 314",
-                  flexShrink: 0,
-                  borderRadius: "0.9375rem",
-                  border: "1px solid rgba(255, 255, 255, 0.15)",
-                  background: `${project.gradient}, lightgray 50% / cover no-repeat`,
-                }}
-              />
-              <div className="flex items-center gap-2">
+          {/* Featured Projects */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredProjects.map((project, index) => (
+              <a
+                key={index}
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group cursor-pointer block"
+              >
                 <div
-                  className="h-4 w-4 ml-0.5 rounded-full shrink-0"
+                  className="mb-4 transition-transform group-hover:scale-105 w-full relative overflow-hidden"
                   style={{
-                    background: project.dotColor,
+                    aspectRatio: "440 / 314",
+                    flexShrink: 0,
+                    borderRadius: "0.9375rem",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    background: project.gradient || "#282924",
                   }}
-                />
-                <div className="font-medium text-white tracking-tight leading-0">
-                  {project.name}
+                >
+                  {project.image && (
+                    <Image
+                      src={project.image}
+                      alt={project.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  )}
                 </div>
-              </div>
-            </a>
-          ))}
-        </div>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="h-4 w-4 ml-0.5 rounded-full shrink-0"
+                    style={{
+                      background: project.dotColor,
+                    }}
+                  />
+                  <div className="font-medium text-white tracking-tight leading-0">
+                    {project.name}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
 
-        {/* More */}
-        <h2 className="mb-8 mt-24 text-sm text-center text-neutral-400 font-semibold tracking-tight">
-          More coming soon...
-        </h2>
-      </section>
+          {/* More */}
+          <h2 className="mb-8 mt-24 text-sm text-center text-neutral-400 font-semibold tracking-tight">
+            More coming soon...
+          </h2>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="text-center py-16 text-gray-400">
