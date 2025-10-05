@@ -3,8 +3,9 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Upload, ArrowRight, Plus } from "lucide-react";
+import { Mic, MicOff, ArrowUp } from "lucide-react";
 
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
@@ -16,7 +17,7 @@ export default function Home() {
     message?: string;
     sandboxUrl?: string;
   } | null>(null);
-  
+
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -30,14 +31,16 @@ export default function Home() {
     console.log("📝 Prompt:", prompt);
 
     // Generate a unique session ID for this build
-    const sessionId = `build-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const sessionId = `build-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 9)}`;
     console.log("🆔 Session ID:", sessionId);
 
     // Immediately redirect to builder page
     const params = new URLSearchParams({
       prompt: prompt,
       sessionId: sessionId,
-      status: "building"
+      status: "building",
     });
     router.push(`/builder?${params.toString()}`);
 
@@ -48,87 +51,90 @@ export default function Home() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ prompt, sessionId }),
-    }).catch(error => {
+    }).catch((error) => {
       console.error("❌ Error starting build:", error);
     });
   };
 
-    // Voice recording functionality
-    const startRecording = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-        chunksRef.current = [];
-  
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            chunksRef.current.push(event.data);
-          }
-        };
-  
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-          await transcribeAudio(audioBlob);
-          
-          // Stop all tracks to release the microphone
-          stream.getTracks().forEach(track => track.stop());
-        };
-  
-        mediaRecorder.start();
-        setIsRecording(true);
-      } catch (error) {
-        console.error("Error starting recording:", error);
-        alert("Could not access microphone. Please check permissions.");
-      }
-    };
-  
-    const stopRecording = () => {
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-        setIsRecording(false);
-        setIsProcessing(true);
-      }
-    };
-  
-    const transcribeAudio = async (audioBlob: Blob) => {
-      try {
-        const formData = new FormData();
-        formData.append("file", audioBlob, "audio.webm");
-        formData.append("model_id", "scribe_v1");
-  
-        const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+  // Voice recording functionality
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+        await transcribeAudio(audioBlob);
+
+        // Stop all tracks to release the microphone
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      alert("Could not access microphone. Please check permissions.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsProcessing(true);
+    }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", audioBlob, "audio.webm");
+      formData.append("model_id", "scribe_v1");
+
+      const response = await fetch(
+        "https://api.elevenlabs.io/v1/speech-to-text",
+        {
           method: "POST",
           headers: {
             "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
           },
           body: formData,
-        });
-  
-        if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
         }
-  
-        const result = await response.json();
-        const transcript = result.text || "";
-        
-        // Add the transcript to the existing prompt
-        setPrompt(prev => prev ? `${prev} ${transcript}` : transcript);
-      } catch (error) {
-        console.error("Error transcribing audio:", error);
-        alert("Failed to transcribe audio. Please try again.");
-      } finally {
-        setIsProcessing(false);
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
       }
-    };
-  
-    const handleMicClick = () => {
-      if (isRecording) {
-        stopRecording();
-      } else {
-        startRecording();
-      }
-    };
+
+      const result = await response.json();
+      const transcript = result.text || "";
+
+      // Add the transcript to the existing prompt
+      setPrompt((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+      alert("Failed to transcribe audio. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleMicClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
 
   const featuredProjects = [
     {
@@ -164,38 +170,34 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen text-white" style={{ background: "#222222" }}>
+    <div className="min-h-screen text-white bg-[#222]">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-6">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded" />
-          <span className="text-xl font-medium">EchoMe</span>
+      <header className="p-2 flex items-center justify-between">
+        <div className="flex items-center justify-center">
+          <div className="w-10 h-10">
+            <Link href="/">
+              <Image
+                src="/microphone.webp"
+                alt="EchoMe Logo"
+                height={50}
+                width={50}
+              />
+            </Link>
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight">EchoMe</h1>
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-2">
           <Link
             href="/sign-in"
-            className="inline-flex items-center justify-center bg-[#282924] text-white w-[5.4375rem] h-[2.8125rem] rounded font-medium"
-            style={{
-              fontSize: "1rem",
-              fontStyle: "normal",
-              fontWeight: 500,
-              lineHeight: "normal",
-              letterSpacing: "-0.03rem",
-            }}
+            className="px-6 py-2 inline-flex items-center justify-center bg-[#282924] border border-[rgba(255,255,255,0.1)] text-white text-[14px] rounded font-medium tracking-tight hover:opacity-75"
           >
             Login
           </Link>
 
           <Link
             href="/sign-up"
-            className="inline-flex items-center justify-center bg-white text-black w-[7.625rem] h-[2.8125rem] rounded font-medium"
-            style={{
-              fontSize: "1rem",
-              fontStyle: "normal",
-              fontWeight: 500,
-              lineHeight: "normal",
-              letterSpacing: "-0.03rem",
-            }}
+            className="px-3 py-2 inline-flex items-center justify-center bg-white text-black text-[14px] rounded font-medium tracking-tight hover:opacity-75"
           >
             Get Started
           </Link>
@@ -205,48 +207,23 @@ export default function Home() {
       {/* Hero Section */}
       <main className="max-w-4xl mx-auto px-8 pt-20 pb-32">
         <div className="text-center space-y-6">
-          <h1
-            style={{
-              color: "#FFF",
-              textAlign: "center",
-              fontFamily: "Geist",
-              fontSize: "4rem",
-              fontStyle: "normal",
-              fontWeight: 500,
-              lineHeight: "normal",
-              letterSpacing: "-0.2rem",
-            }}
-          >
-            Build applications by talking.
-          </h1>
+          <h2 className="text-6xl font-semibold tracking-tight text-center leading-none">
+            Build applications by talking
+          </h2>
 
-          <div
-            className="space-y-1 mx-auto"
-            style={{
-              width: "52.25rem",
-              color: "#FFF",
-              textAlign: "center",
-              fontFamily: "Geist",
-              fontSize: "1.5rem",
-              fontStyle: "normal",
-              fontWeight: 600,
-              lineHeight: "normal",
-              letterSpacing: "-0.045rem",
-            }}
-          >
-            <p>Describe what you want.</p>
-            <p>Watch it come to life.</p>
-            <p>No typing required.</p>
+          <div className="mx-auto text-white text-2xl text-align font-medium tracking-tight leading-none">
+            <p>Describe what you want</p>
+            <p>Watch it come to life</p>
+            <p>No typing required</p>
           </div>
 
           {/* Input Area */}
-          <div className="pt-8 flex justify-center">
+          <div className="pt-6 flex justify-center">
             <div
-              className="relative p-4"
+              className="relative p-4 rounded"
               style={{
                 width: "38.75rem",
                 height: "8.8125rem",
-                borderRadius: "1.5625rem",
                 border: "1px solid rgba(255, 255, 255, 0.15)",
                 background: "#282924",
               }}
@@ -255,7 +232,7 @@ export default function Home() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe your app. For example: A task tracker with dark mode and Google login."
-                className="w-full h-full bg-transparent border-0 outline-none text-white placeholder:text-gray-500 text-sm resize-none"
+                className="w-full h-full bg-transparent border-0 outline-none text-white font-medium placeholder:text-[#F8F8F8] text-sm resize-none"
                 style={{ outline: "none", boxShadow: "none" }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
@@ -264,27 +241,7 @@ export default function Home() {
                   }
                 }}
               />
-              <div className="absolute bottom-4 left-4">
-                <button
-                  className="hover:opacity-80 rounded-full transition-colors flex items-center justify-center"
-                  style={{
-                    width: "1.875rem",
-                    height: "1.875rem",
-                    flexShrink: 0,
-                    background: "#3C3C3C",
-                  }}
-                >
-                  <Plus
-                    style={{
-                      width: "1.25rem",
-                      height: "1.25rem",
-                      flexShrink: 0,
-                      color: "#FFFFFF",
-                      strokeWidth: 1.5,
-                    }}
-                  />
-                </button>
-              </div>
+
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
                 <Button
                   onClick={handleMicClick}
@@ -292,8 +249,8 @@ export default function Home() {
                   variant={isRecording ? "destructive" : "ghost"}
                   size="sm"
                   className={`hover:opacity-80 rounded-full transition-colors flex items-center justify-center text-white ${
-                    isRecording 
-                      ? "bg-red-500 hover:bg-red-600 text-white animate-pulse" 
+                    isRecording
+                      ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
                       : "hover:bg-white"
                   }`}
                   style={{
@@ -323,7 +280,7 @@ export default function Home() {
                     background: "#3C3C3C",
                   }}
                 >
-                  <ArrowRight
+                  <ArrowUp
                     className="text-white"
                     style={{
                       width: "1.25rem",

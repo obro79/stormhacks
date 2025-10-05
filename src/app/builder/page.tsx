@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-import { Mic, Plus, MessageSquare, ArrowUp, ExternalLink } from "lucide-react";
+import { Mic, ArrowUp, ExternalLink } from "lucide-react";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -118,7 +118,7 @@ export default function BuilderPage() {
       {/* Top Header */}
       <header className="flex items-center py-2">
         {/* Logo */}
-        <div className="ml-2 w-[400px] flex items-center gap-2">
+        <div className="ml-2 w-[400px] flex items-center">
           <div className="w-10 h-10">
             <Link href="/">
               <Image
