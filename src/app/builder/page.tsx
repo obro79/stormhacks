@@ -3,14 +3,22 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Mic, Plus, MessageSquare, Upload, ExternalLink } from "lucide-react";
+
+import { Mic, Plus, MessageSquare, ArrowUp, ExternalLink } from "lucide-react";
+
+import Link from "next/link";
+import Image from "next/image";
 
 export default function BuilderPage() {
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<"preview" | "code" | "share">("preview");
+  const [activeTab, setActiveTab] = useState<"preview" | "code" | "share">(
+    "preview"
+  );
   const [chatInput, setChatInput] = useState("");
   const [sandboxUrl, setSandboxUrl] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Array<{ type: string; content: string }>>([]);
+  const [messages, setMessages] = useState<
+    Array<{ type: string; content: string }>
+  >([]);
   const [iframeLoading, setIframeLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +34,7 @@ export default function BuilderPage() {
     if (prompt) {
       newMessages.push({
         type: "user",
-        content: prompt
+        content: prompt,
       });
     }
 
@@ -34,17 +42,22 @@ export default function BuilderPage() {
     if (status === "building" && sessionId) {
       console.log("🔄 Starting to listen for build updates...");
 
-      const eventSource = new EventSource(`/api/build-stream?sessionId=${sessionId}`);
+      const eventSource = new EventSource(
+        `/api/build-stream?sessionId=${sessionId}`
+      );
 
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log("📨 SSE message:", data.message);
 
         // Add progress message
-        setMessages(prev => [...prev, {
-          type: "assistant",
-          content: data.message
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: "assistant",
+            content: data.message,
+          },
+        ]);
 
         // Check if complete
         if (data.message.startsWith('COMPLETE:')) {
@@ -64,7 +77,7 @@ export default function BuilderPage() {
           });
 
           eventSource.close();
-        } else if (data.message.startsWith('ERROR:')) {
+        } else if (data.message.startsWith("ERROR:")) {
           eventSource.close();
         }
       };
@@ -86,7 +99,7 @@ export default function BuilderPage() {
       if (message) {
         newMessages.push({
           type: "assistant",
-          content: message
+          content: message,
         });
       }
       setMessages(newMessages);
@@ -111,119 +124,109 @@ export default function BuilderPage() {
       setMessages([
         {
           type: "user",
-          content: "Create a task tracker with a list, add/delete, and a dark theme."
+          content:
+            "Create a task tracker with a list, add/delete, and a dark theme.",
         },
         {
           type: "assistant",
-          content: "Created a new GitHub repo.\nNew project scaffolded with Next.js + TypeScript + TailwindCSS + shadcn UI.\n\n• Added a Task Tracker page with a task list.\n• Implemented add and delete functionality for tasks.\n• Applied a dark theme across the app.\n\nPreview is ready."
-        }
+          content:
+            "Created a new GitHub repo.\nNew project scaffolded with Next.js + TypeScript + TailwindCSS + shadcn UI.\n\n• Added a Task Tracker page with a task list.\n• Implemented add and delete functionality for tasks.\n• Applied a dark theme across the app.\n\nPreview is ready.",
+        },
       ]);
     }
   }, [searchParams]);
 
   return (
-    <div className="h-screen flex flex-col" style={{ background: '#222222' }}>
+    <div className="h-screen flex flex-col bg-[#222]">
       {/* Top Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-white rounded" />
-          <span className="text-white text-lg font-medium">EchoMe</span>
+      <header className="flex items-center py-2">
+        {/* Logo */}
+        <div className="ml-2 w-[400px] flex items-center gap-2">
+          <div className="w-10 h-10">
+            <Link href="/">
+              <Image
+                src="/microphone.webp"
+                alt="EchoMe Logo"
+                height={50}
+                width={50}
+              />
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Buttons aligned with preview panel */}
+        <div className="ml-2 flex items-center gap-2">
           <button
             onClick={() => setActiveTab("preview")}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded transition-colors ${
               activeTab === "preview"
-                ? "bg-gray-700 text-white"
+                ? "bg-[#282924] border border-[rgba(255,255,255,0.15)] text-white"
                 : "text-gray-400 hover:text-white"
-            }`}
-            style={{ fontFamily: 'Geist', fontSize: '0.875rem', fontWeight: 500 }}
+            } text-sm font-medium`}
           >
             Preview
           </button>
           <button
             onClick={() => setActiveTab("code")}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded transition-colors ${
               activeTab === "code"
-                ? "bg-gray-700 text-white"
+                ? "bg-[#282924] border border-[rgba(255,255,255,0.15)] text-white"
                 : "text-gray-400 hover:text-white"
-            }`}
-            style={{ fontFamily: 'Geist', fontSize: '0.875rem', fontWeight: 500 }}
+            } text-sm font-medium`}
           >
             Code
           </button>
           <button
             onClick={() => setActiveTab("share")}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded transition-colors ${
               activeTab === "share"
-                ? "bg-gray-700 text-white"
+                ? "bg-[#282924] border border-[rgba(255,255,255,0.15)] text-white"
                 : "text-gray-400 hover:text-white"
-            }`}
-            style={{ fontFamily: 'Geist', fontSize: '0.875rem', fontWeight: 500 }}
+            } text-sm font-medium`}
           >
             Share
           </button>
         </div>
 
-        <Button
-          className="text-black hover:opacity-90"
-          style={{
-            background: '#22C55E',
-            fontFamily: 'Geist',
-            fontSize: '0.875rem',
-            fontWeight: 600
-          }}
-        >
-          Deploy
-        </Button>
+        {/* Spacer to push Deploy button to the right */}
+        <div className="flex-1" />
+
+        {/* Deploy button */}
+        <div className="mr-2">
+          <Button
+            className="text-white hover:opacity-75"
+            style={{
+              background: "#22C55E",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+            }}
+          >
+            Deploy
+          </Button>
+        </div>
       </header>
 
       {/* Main Content - Split Panel */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden ml-2 mb-2">
         {/* Left Panel - Chat History */}
-        <div className="w-[400px] flex flex-col border-r border-gray-800">
+        <div className="w-[400px] flex flex-col ">
           {/* Chat History Header */}
-          <div className="p-4 border-b border-gray-800">
-            <h2
-              className="text-white"
-              style={{
-                fontFamily: 'Geist',
-                fontSize: '1.125rem',
-                fontWeight: 600
-              }}
-            >
-              Chat History
-            </h2>
+          <div className="p-4 bg-[#282924] border-x border-t border-[rgba(255,255,255,0.15)] rounded-t">
+            <h2 className="text-white font-semibold">Chat History</h2>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 mb-2 space-y-6  bg-[#282924] border-x border-b border-[rgba(255,255,255,0.15)] rounded-b">
             {messages.map((message, index) => (
               <div key={index}>
                 {message.type === "user" ? (
-                  <div
-                    className="p-3 rounded-lg ml-auto max-w-[85%]"
-                    style={{
-                      background: '#3C3C3C',
-                      color: '#FFF',
-                      fontFamily: 'Geist',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    {message.content}
+                  <div className="flex justify-end">
+                    <div className="inline-block p-3 rounded-2xl bg-[#3A3A3A] text-white text-right font-medium text-sm max-w-[75%] break-words whitespace-pre-line">
+                      {message.content}
+                    </div>
                   </div>
                 ) : (
-                  <div
-                    className="p-3 rounded-lg"
-                    style={{
-                      background: '#2A2A2A',
-                      color: '#E5E5E5',
-                      fontFamily: 'Geist',
-                      fontSize: '0.875rem',
-                      whiteSpace: 'pre-line'
-                    }}
-                  >
+                  <div className="text-[#F8F8F8] font-[Geist] font-medium text-sm whitespace-pre-line">
                     {message.content}
                   </div>
                 )}
@@ -232,133 +235,41 @@ export default function BuilderPage() {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-gray-800">
-            <div className="text-gray-400 text-sm mb-2" style={{ fontFamily: 'Geist' }}>
-              Talk with Echome.
-            </div>
-            <div
-              className="relative p-3 rounded-xl flex items-center gap-2"
-              style={{
-                background: '#282924',
-                border: '1px solid rgba(255, 255, 255, 0.15)'
-              }}
-            >
-              <button
-                className="hover:opacity-80 rounded-full flex items-center justify-center"
-                style={{
-                  width: '1.875rem',
-                  height: '1.875rem',
-                  background: '#3C3C3C'
-                }}
-              >
-                <Plus
-                  style={{
-                    width: '1.25rem',
-                    height: '1.25rem',
-                    color: '#FFFFFF',
-                    strokeWidth: 1.5
-                  }}
-                />
-              </button>
-
-              <button
-                className="hover:opacity-80 rounded-full flex items-center justify-center"
-                style={{
-                  width: '1.875rem',
-                  height: '1.875rem',
-                  background: '#3C3C3C'
-                }}
-              >
-                <MessageSquare
-                  style={{
-                    width: '1.25rem',
-                    height: '1.25rem',
-                    color: '#FFFFFF',
-                    strokeWidth: 1.5
-                  }}
-                />
-              </button>
-
-              <input
-                type="text"
+          <div className=" relative h-[150px] p-4  bg-[#282924] border border-[rgba(255,255,255,0.15)] rounded">
+            <div className="h-full rounded flex items-center gap-2">
+              <textarea
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder=""
-                className="flex-1 bg-transparent border-0 outline-none text-white text-sm"
-                style={{ fontFamily: 'Geist' }}
+                placeholder="Talk with EchoMe."
+                className="flex-1 w-full h-full border-0 outline-none text-white placeholder:text-white font-semibold text-sm resize-none"
               />
 
-              <button
-                className="hover:opacity-80 rounded-full flex items-center justify-center opacity-50"
-                style={{
-                  width: '1.875rem',
-                  height: '1.875rem',
-                  background: '#3C3C3C'
-                }}
-                disabled
-              >
-                <Mic
-                  style={{
-                    width: '1.25rem',
-                    height: '1.25rem',
-                    color: '#FFFFFF',
-                    strokeWidth: 1.5
-                  }}
-                />
-              </button>
+              {/* Absolute Buttons */}
+              <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                <button className="hover:opacity-80 rounded-full flex items-center justify-center w-[1.875rem] h-[1.875rem] bg-[#3C3C3C]">
+                  <Mic className="w-5 h-5 text-white" strokeWidth={1.5} />
+                </button>
 
-              <button
-                className="hover:opacity-80 rounded-full flex items-center justify-center"
-                style={{
-                  width: '1.875rem',
-                  height: '1.875rem',
-                  background: '#3C3C3C'
-                }}
-              >
-                <Mic
-                  style={{
-                    width: '1.25rem',
-                    height: '1.25rem',
-                    color: '#FFFFFF',
-                    strokeWidth: 1.5
-                  }}
-                />
-              </button>
-
-              <button
-                className="hover:opacity-80 rounded-full flex items-center justify-center"
-                style={{
-                  width: '1.875rem',
-                  height: '1.875rem',
-                  background: '#3C3C3C'
-                }}
-              >
-                <Upload
-                  style={{
-                    width: '1.25rem',
-                    height: '1.25rem',
-                    color: '#FFFFFF',
-                    strokeWidth: 1.5
-                  }}
-                />
-              </button>
+                <button className="hover:opacity-80 rounded-full flex items-center justify-center w-[1.875rem] h-[1.875rem] bg-[#3C3C3C]">
+                  <ArrowUp className="w-5 h-5 text-white" strokeWidth={1.5} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Right Panel - Preview */}
-        <div className="flex-1 flex flex-col p-6">
+        <div className="flex-1 flex flex-col mx-2">
           {/* Preview Header with Open in New Tab button */}
           {sandboxUrl && (
             <div className="flex justify-end mb-4">
               <Button
-                onClick={() => window.open(sandboxUrl, '_blank')}
+                onClick={() => window.open(sandboxUrl, "_blank")}
                 variant="outline"
                 className="flex items-center gap-2"
                 style={{
-                  fontFamily: 'Geist',
-                  fontSize: '0.875rem',
-                  fontWeight: 500
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
                 }}
               >
                 <ExternalLink className="w-4 h-4" />
@@ -367,22 +278,14 @@ export default function BuilderPage() {
             </div>
           )}
 
-          <div
-            className="flex-1 rounded-xl overflow-hidden"
-            style={{
-              border: '2px solid #6366F1',
-              background: '#1A1A1A'
-            }}
-          >
+          <div className="flex-1 rounded overflow-hidden bg-[#282924] border border-[rgba(255,255,255,0.15)]">
             {activeTab === "preview" && (
               <div className="w-full h-full relative">
                 {sandboxUrl ? (
                   <>
                     {iframeLoading && (
                       <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1A]">
-                        <div className="text-gray-400" style={{ fontFamily: 'Geist' }}>
-                          Loading preview...
-                        </div>
+                        <div className="text-gray-400">Loading preview...</div>
                       </div>
                     )}
                     <iframe
@@ -404,7 +307,7 @@ export default function BuilderPage() {
                   </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-gray-400" style={{ fontFamily: 'Geist' }}>
+                    <div className="text-white font-semibold">
                       No preview available
                     </div>
                   </div>
@@ -413,14 +316,14 @@ export default function BuilderPage() {
             )}
             {activeTab === "code" && (
               <div className="w-full h-full flex items-center justify-center">
-                <div className="text-gray-400" style={{ fontFamily: 'Geist' }}>
+                <div className="text-white font-semibold">
                   Code view will load here
                 </div>
               </div>
             )}
             {activeTab === "share" && (
               <div className="w-full h-full flex items-center justify-center">
-                <div className="text-gray-400" style={{ fontFamily: 'Geist' }}>
+                <div className="text-white font-semibold">
                   Share options will load here
                 </div>
               </div>
