@@ -274,7 +274,7 @@ export default function Home() {
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
                 <Button
                   onClick={handleMicClick}
-                  disabled={_loading || isProcessing}
+                  disabled={isProcessing}
                   variant={isRecording ? "destructive" : "ghost"}
                   size="sm"
                   className={`hover:opacity-80 rounded-full transition-colors flex items-center justify-center text-white ${
@@ -299,7 +299,7 @@ export default function Home() {
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={!prompt.trim() || _loading}
+                  disabled={!prompt.trim()}
                   size="icon"
                   className="rounded-full hover:opacity-80 flex items-center justify-center text-white"
                   style={{
