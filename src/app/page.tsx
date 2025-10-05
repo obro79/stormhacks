@@ -13,8 +13,7 @@ export default function Home() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [prompt, setPrompt] = useState("");
-  const [_loading, _setLoading] = useState(false);
-  const [result, _setResult] = useState<{
+  const [result] = useState<{
     success: boolean;
     message?: string;
     sandboxUrl?: string;

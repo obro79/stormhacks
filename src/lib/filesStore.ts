@@ -2,7 +2,6 @@ import { FileChange } from './types';
 
 // Type for global filesStore
 declare global {
-  // eslint-disable-next-line no-var
   var filesStore: Map<string, FileChange[]> | undefined;
 }
 
