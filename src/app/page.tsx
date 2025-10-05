@@ -356,67 +356,156 @@ export default function Home() {
 
       {/* Featured Section - Only show when not logged in */}
       {!user && (
-        <section className="m-2 p-4 bg-[#282924] border border-[rgba(255,255,255,0.15)] rounded">
-          <h2 className="text-xl font-medium mb-8 tracking-tight">
-            Featured Projects
-          </h2>
+        <>
+          <section className="m-2 p-4 bg-[#282924] border border-[rgba(255,255,255,0.15)] rounded">
+            <h2 className="text-xl font-medium mb-8 tracking-tight">
+              Featured Projects
+            </h2>
 
-          {/* Featured Projects */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredProjects.map((project, index) => (
-              <a
-                key={index}
-                href={project.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group cursor-pointer block"
-              >
-                <div
-                  className="mb-4 transition-transform group-hover:scale-105 w-full relative overflow-hidden"
-                  style={{
-                    aspectRatio: "440 / 314",
-                    flexShrink: 0,
-                    borderRadius: "0.9375rem",
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    background: project.gradient || "#282924",
-                  }}
+            {/* Featured Projects */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredProjects.map((project, index) => (
+                <a
+                  key={index}
+                  href={project.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group cursor-pointer block"
                 >
-                  {project.image && (
-                    <Image
-                      src={project.image}
-                      alt={project.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
                   <div
-                    className="h-4 w-4 ml-0.5 rounded-full shrink-0"
+                    className="mb-4 transition-transform group-hover:scale-105 w-full relative overflow-hidden"
                     style={{
-                      background: project.dotColor,
+                      aspectRatio: "440 / 314",
+                      flexShrink: 0,
+                      borderRadius: "0.9375rem",
+                      border: "1px solid rgba(255, 255, 255, 0.15)",
+                      background: project.gradient || "#282924",
                     }}
-                  />
-                  <div className="font-medium text-white tracking-tight leading-0">
-                    {project.name}
+                  >
+                    {project.image && (
+                      <Image
+                        src={project.image}
+                        alt={project.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    )}
                   </div>
-                </div>
-              </a>
-            ))}
-          </div>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-4 w-4 ml-0.5 rounded-full shrink-0"
+                      style={{
+                        background: project.dotColor,
+                      }}
+                    />
+                    <div className="font-medium text-white tracking-tight leading-0">
+                      {project.name}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
 
-          {/* More */}
-          <h2 className="mb-8 mt-24 text-sm text-center text-neutral-400 font-semibold tracking-tight">
-            More coming soon...
-          </h2>
-        </section>
+            {/* More */}
+            <h2 className="mb-8 mt-24 text-sm text-center text-neutral-400 font-semibold tracking-tight">
+              More coming soon...
+            </h2>
+          </section>
+
+          {/* How It Works Section */}
+          <section className="max-w-6xl mx-auto px-8 py-16">
+            <h2 className="text-4xl font-semibold tracking-tight text-center mb-16">
+              How It Works
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="text-center space-y-4">
+                <div className="text-5xl font-bold text-white/20">1</div>
+                <h3 className="text-xl font-semibold tracking-tight">
+                  Speak Your Idea
+                </h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Tell EchoMe what you want to build. A task tracker. A landing
+                  page. A dashboard. Anything.
+                </p>
+              </div>
+
+              <div className="text-center space-y-4">
+                <div className="text-5xl font-bold text-white/20">2</div>
+                <h3 className="text-xl font-semibold tracking-tight">
+                  Watch It Scaffold
+                </h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Your app appears instantly — complete with TypeScript,
+                  TailwindCSS, and modern UI components. Live preview included.
+                </p>
+              </div>
+
+              <div className="text-center space-y-4">
+                <div className="text-5xl font-bold text-white/20">3</div>
+                <h3 className="text-xl font-semibold tracking-tight">
+                  Refine by Voice
+                </h3>
+                <q className="text-gray-400 text-sm leading-relaxed tracking-tight">
+                  Make that button round. Add a dark theme. Move the sidebar
+                  left.
+                </q>
+
+                <p className="text-gray-400 text-sm leading-relaxed tracking-tight">
+                  Every edit happens in real-time.
+                </p>
+              </div>
+
+              <div className="text-center space-y-4">
+                <div className="text-5xl font-bold text-white/20">4</div>
+                <h3 className="text-xl font-semibold tracking-tight">
+                  Deploy in Seconds
+                </h3>
+                <p className="text-gray-400 text-sm leading-relaxed tracking-tight">
+                  One click. Your app goes live with a shareable URL. No
+                  configuration. No hassle.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Voice or Text Section */}
+          <section className="max-w-4xl mx-auto px-8 py-16 text-center">
+            <h2 className="text-4xl font-semibold tracking-tight mb-4">
+              Voice or Text. Your Choice.
+            </h2>
+            <p className="text-gray-400 text-md tracking-tight">
+              Built for conversation. Works with your voice, keyboard, or both.
+              The fastest way from idea to deployed app.
+            </p>
+          </section>
+
+          {/* CTA Section */}
+          <section className="max-w-2xl mx-auto px-8 py-16 text-center space-y-2">
+            <h2 className="text-4xl font-semibold tracking-tight">
+              Ready to Build?
+            </h2>
+            <p className="text-sm text-gray-300">
+              Stop writing boilerplate. Start talking to your code.
+            </p>
+            <Link
+              href="/sign-up"
+              className="inline-flex mt-8 mb-4 px-16 py-8 items-center justify-center bg-white text-black text-lg rounded-full font-semibold tracking-tight hover:opacity-75 transition-opacity"
+            >
+              Try EchoMe Now
+            </Link>
+            <p className="text-xs text-gray-400 italic">
+              Voice-powered. Zero friction. Built for builders.
+            </p>
+          </section>
+        </>
       )}
 
       {/* Footer */}
-      <footer className="text-center py-16 text-gray-400">
-        <p className="text-lg">
-          👉 Try the demo. Build your first app in minutes.
+      <footer className="mt-24 py-3">
+        <p className="text-gray-500 text-xs ml-6 text-left">
+          Built for StormHacks 2025
         </p>
       </footer>
     </div>
