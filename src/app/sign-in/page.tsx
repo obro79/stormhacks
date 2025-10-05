@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function SignInPage() {
+import Link from "next/link";
+import Image from "next/image";
+
+export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,9 +63,27 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-neutral-800 rounded-3xl p-8">
-        <div className="space-y-6">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-neutral-900">
+      <div className="w-[100px] h-[100px]">
+        <Link href="/">
+          <Image
+            src="/microphone.webp"
+            objectFit="cover"
+            alt="EchoMe Logo"
+            height={150}
+            width={150}
+          />
+        </Link>
+      </div>
+
+      <div className="my-6">
+        <h1 className="text-2xl text-white tracking-tight font-semibold leading-none">
+          Sign In
+        </h1>
+      </div>
+
+      <div className="w-full max-w-md bg-neutral-800 rounded p-6">
+        <div className="space-y-4">
           {/* Email Field */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white text-base">
@@ -74,7 +95,7 @@ export default function SignInPage() {
               placeholder="Your email address."
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500 h-12 rounded-lg"
+              className="bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500 h-12 rounded"
             />
           </div>
 
@@ -88,7 +109,7 @@ export default function SignInPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-neutral-700 border-neutral-600 text-white h-12 rounded-lg"
+              className="bg-neutral-700 border-neutral-600 text-white h-12 rounded"
             />
           </div>
 
@@ -96,7 +117,7 @@ export default function SignInPage() {
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full bg-white text-black hover:bg-gray-100 h-14 rounded-xl font-medium text-base"
+            className="w-full bg-white text-black hover:bg-neutral-700 hover:text-white h-14 rounded font-medium text-base transition duration-200 ease-in-out"
           >
             {loading ? "Signing in..." : "Continue"}
           </Button>
@@ -119,7 +140,7 @@ export default function SignInPage() {
           <Button
             onClick={handleGoogleSignIn}
             variant="outline"
-            className="w-full bg-transparent border-neutral-600 text-white hover:bg-neutral-700 h-14 rounded-xl font-medium text-base"
+            className="w-full bg-transparent border-neutral-600 text-white hover:bg-neutral-700 h-14 rounded font-medium text-base"
           >
             Continue with Google
           </Button>

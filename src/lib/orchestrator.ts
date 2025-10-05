@@ -36,7 +36,7 @@ Rules:
 - Use modern React, TypeScript, and Next.js patterns
 - Make the code production-ready`;
 
-export async function buildApp(prompt: string): Promise<BuildResponse> {
+export async function buildApp(prompt: string, onProgress?: (message: string) => void): Promise<BuildResponse> {
   try {
     console.log('🤖 buildApp function called');
     console.log('📝 Building app with prompt:', prompt);
@@ -49,12 +49,15 @@ export async function buildApp(prompt: string): Promise<BuildResponse> {
     ];
 
     console.log('🧠 Calling Claude API...');
+    onProgress?.('🧠 Calling Claude API...');
+
     const response = await callClaude(messages, SYSTEM_PROMPT, {
       maxTokens: 16000,
       temperature: 1,
     });
 
     console.log('✅ Claude API responded');
+    onProgress?.('✅ Claude generated the code');
 
     const thinking = extractThinkingFromResponse(response);
     const text = extractTextFromResponse(response);
@@ -63,6 +66,7 @@ export async function buildApp(prompt: string): Promise<BuildResponse> {
     console.log('📄 Parsing generated files...');
     const files = parseFilesFromResponse(text);
     console.log(`✅ Generated ${files.length} file(s)`);
+    onProgress?.(`📄 Generated ${files.length} file(s)`);
 
     // Create Daytona sandbox with the generated files
     let sandboxId: string | undefined;
@@ -70,13 +74,17 @@ export async function buildApp(prompt: string): Promise<BuildResponse> {
 
     try {
       console.log('🚀 Deploying to Daytona...');
-      sandboxId = await createDaytonaSandbox(files);
+      onProgress?.('🚀 Deploying to Daytona...');
+
+      sandboxId = await createDaytonaSandbox(files, onProgress);
       console.log('✅ Sandbox created:', sandboxId);
 
       sandboxUrl = await getSandboxUrl(sandboxId);
       console.log('🔗 Preview link ready:', sandboxUrl);
+      onProgress?.('✅ Preview is ready!');
     } catch (error) {
       console.warn('⚠️ Failed to create Daytona sandbox:', error);
+      onProgress?.('⚠️ Failed to deploy to Daytona');
       // Continue without sandbox - still return the files
     }
 
@@ -90,6 +98,7 @@ export async function buildApp(prompt: string): Promise<BuildResponse> {
     };
   } catch (error) {
     console.error('❌ Error building app:', error);
+    onProgress?.(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return {
       success: false,
       files: [],
