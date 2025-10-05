@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { buildApp } from '@/lib/orchestrator';
+import { storeFiles } from '../download/route';
 
 // Store for progress updates
 const progressStore = new Map<string, string[]>();
@@ -32,6 +33,11 @@ export async function POST(request: NextRequest) {
       if (result.success && result.sandboxUrl) {
         addProgress(`✅ Preview ready! ${result.sandboxUrl}`);
         addProgress(`COMPLETE:${result.sandboxUrl}`);
+        
+        // Store files for download
+        if (result.files && result.files.length > 0) {
+          storeFiles(sessionId, result.files);
+        }
       } else {
         addProgress(`❌ ${result.message}`);
         addProgress(`ERROR:${result.message}`);

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-import { Mic, Plus, MessageSquare, ArrowUp, ExternalLink } from "lucide-react";
+import { Mic, Plus, MessageSquare, ArrowUp, ExternalLink, Download } from "lucide-react";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -16,6 +16,7 @@ export default function BuilderPage() {
   );
   const [chatInput, setChatInput] = useState("");
   const [sandboxUrl, setSandboxUrl] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<
     Array<{ type: string; content: string }>
   >([]);
@@ -26,8 +27,13 @@ export default function BuilderPage() {
     const prompt = searchParams.get("prompt");
     const url = searchParams.get("sandboxUrl");
     const message = searchParams.get("message");
-    const sessionId = searchParams.get("sessionId");
+    const sessionIdParam = searchParams.get("sessionId");
     const status = searchParams.get("status");
+    
+    // Store sessionId in state
+    if (sessionIdParam) {
+      setSessionId(sessionIdParam);
+    }
 
     const newMessages: Array<{ type: string; content: string }> = [];
 
@@ -39,11 +45,11 @@ export default function BuilderPage() {
     }
 
     // If building, start listening to SSE
-    if (status === "building" && sessionId) {
+    if (status === "building" && sessionIdParam) {
       console.log("🔄 Starting to listen for build updates...");
 
       const eventSource = new EventSource(
-        `/api/build-stream?sessionId=${sessionId}`
+        `/api/build-stream?sessionId=${sessionIdParam}`
       );
 
       eventSource.onmessage = (event) => {
@@ -120,7 +126,7 @@ export default function BuilderPage() {
     }
 
     // Default demo if no params
-    if (!prompt && !url && !sessionId) {
+    if (!prompt && !url && !sessionIdParam) {
       setMessages([
         {
           type: "user",
@@ -135,6 +141,33 @@ export default function BuilderPage() {
       ]);
     }
   }, [searchParams]);
+
+  const handleDownload = async () => {
+    if (!sessionId) {
+      console.error('No session ID available for download');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/download?sessionId=${sessionId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to download files');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dayton-sandbox-code-${sessionId}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading files:', error);
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col bg-[#222]">
@@ -260,9 +293,23 @@ export default function BuilderPage() {
 
         {/* Right Panel - Preview */}
         <div className="flex-1 flex flex-col mx-2">
-          {/* Preview Header with Open in New Tab button */}
+          {/* Preview Header with Open in New Tab and Download buttons */}
           {sandboxUrl && (
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end gap-2 mb-4">
+              {sessionId && (
+                <Button
+                  onClick={handleDownload}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  style={{
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  <Download className="w-4 h-4" />
+                  Download Code
+                </Button>
+              )}
               <Button
                 onClick={() => window.open(sandboxUrl, "_blank")}
                 variant="outline"
