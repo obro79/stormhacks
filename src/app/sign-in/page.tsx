@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import Link from "next/link";
+import Image from "next/image";
+
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,14 +20,28 @@ export default function Home() {
     console.log("Sign in with Google");
   };
 
-  const handleAppleSignIn = () => {
-    console.log("Sign in with Apple");
-  };
-
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-neutral-800 rounded-3xl p-8">
-        <div className="space-y-6">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-neutral-900">
+      <div className="w-[100px] h-[100px]">
+        <Link href="/">
+          <Image
+            src="/microphone.webp"
+            objectFit="cover"
+            alt="EchoMe Logo"
+            height={150}
+            width={150}
+          />
+        </Link>
+      </div>
+
+      <div className="my-6">
+        <h1 className="text-2xl text-white tracking-tight font-semibold leading-none">
+          Sign In
+        </h1>
+      </div>
+
+      <div className="w-full max-w-md bg-neutral-800 rounded p-6">
+        <div className="space-y-4">
           {/* Email Field */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white text-base">
@@ -36,7 +53,7 @@ export default function Home() {
               placeholder="Your email address."
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500 h-12 rounded-lg"
+              className="bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500 h-12 rounded"
             />
           </div>
 
@@ -50,14 +67,14 @@ export default function Home() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-neutral-700 border-neutral-600 text-white h-12 rounded-lg"
+              className="bg-neutral-700 border-neutral-600 text-white h-12 rounded"
             />
           </div>
 
           {/* Continue Button */}
           <Button
             onClick={handleSubmit}
-            className="w-full bg-white text-black hover:bg-gray-100 h-14 rounded-xl font-medium text-base"
+            className="w-full bg-white text-black hover:bg-neutral-700 hover:text-white h-14 rounded font-medium text-base transition duration-200 ease-in-out"
           >
             Continue
           </Button>
@@ -73,7 +90,7 @@ export default function Home() {
           <Button
             onClick={handleGoogleSignIn}
             variant="outline"
-            className="w-full bg-transparent border-neutral-600 text-white hover:bg-neutral-700 h-14 rounded-xl font-medium text-base"
+            className="w-full bg-transparent border-neutral-600 text-white hover:bg-neutral-700 h-14 rounded font-medium text-base"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -96,28 +113,15 @@ export default function Home() {
             Continue with Google
           </Button>
 
-          {/* Apple Sign In */}
-          <Button
-            onClick={handleAppleSignIn}
-            variant="outline"
-            className="w-full bg-transparent border-neutral-600 text-white hover:bg-neutral-700 h-14 rounded-xl font-medium text-base"
-          >
-            <svg
-              className="w-7 h-7 mr-2"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-            </svg>
-            Continue with Apple
-          </Button>
-
           {/* Sign Up Link */}
           <div className="text-center pt-4">
-            <span className="text-neutral-400">
+            <span className="text-neutral-400 text-sm">
               Don&#39;t have an account?{" "}
             </span>
-            <a href="/sign-up" className="text-cyan-500 hover:text-cyan-400">
+            <a
+              href="/sign-up"
+              className="text-sm text-sky-500 hover:text-sky-400"
+            >
               Sign up
             </a>
           </div>
