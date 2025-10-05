@@ -30,6 +30,10 @@ export async function POST(request: NextRequest) {
       const result = await buildApp(prompt, addProgress);
 
       if (result.success && result.sandboxUrl) {
+        // Send sandboxId first so the UI can capture it
+        if (result.sandboxId) {
+          addProgress(`SANDBOX_ID:${result.sandboxId}`);
+        }
         addProgress(`✅ Preview ready! ${result.sandboxUrl}`);
         addProgress(`COMPLETE:${result.sandboxUrl}`);
       } else {

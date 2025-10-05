@@ -16,10 +16,12 @@ export default function BuilderPage() {
   );
   const [chatInput, setChatInput] = useState("");
   const [sandboxUrl, setSandboxUrl] = useState<string | null>(null);
+  const [sandboxId, setSandboxId] = useState<string | null>(null);
   const [messages, setMessages] = useState<
     Array<{ type: string; content: string }>
   >([]);
   const [iframeLoading, setIframeLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     // Read URL params
@@ -28,6 +30,12 @@ export default function BuilderPage() {
     const message = searchParams.get("message");
     const sessionId = searchParams.get("sessionId");
     const status = searchParams.get("status");
+    const sandboxIdParam = searchParams.get("sandboxId");
+
+    // Store sandboxId for chat functionality
+    if (sandboxIdParam) {
+      setSandboxId(sandboxIdParam);
+    }
 
     const newMessages: Array<{ type: string; content: string }> = [];
 
@@ -77,6 +85,10 @@ export default function BuilderPage() {
           });
 
           eventSource.close();
+        } else if (data.message.startsWith("SANDBOX_ID:")) {
+          // Extract sandboxId from message
+          const id = data.message.replace('SANDBOX_ID:', '');
+          setSandboxId(id);
         } else if (data.message.startsWith("ERROR:")) {
           eventSource.close();
         }
@@ -135,6 +147,91 @@ export default function BuilderPage() {
       ]);
     }
   }, [searchParams]);
+
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || !sandboxId || isSending) return;
+
+    const userMessage = chatInput.trim();
+    setChatInput("");
+    setIsSending(true);
+
+    // Add user message to chat
+    setMessages((prev) => [
+      ...prev,
+      {
+        type: "user",
+        content: userMessage,
+      },
+    ]);
+
+    try {
+      // Call chat API
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          sandboxId,
+          conversationHistory: messages.map((m) => ({
+            role: m.type === "user" ? "user" : "assistant",
+            content: m.content,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Add assistant response
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: "assistant",
+            content: data.message,
+          },
+        ]);
+
+        // Reload iframe if files were updated
+        if (data.filesUpdated > 0 && sandboxUrl) {
+          setIframeLoading(true);
+          // Force iframe reload by changing the src
+          const iframe = document.querySelector('iframe');
+          if (iframe) {
+            iframe.src = iframe.src;
+          }
+        }
+      } else {
+        // Show error
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: "assistant",
+            content: `❌ Error: ${data.error}`,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "assistant",
+          content: `❌ Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ]);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col bg-[#222]">
@@ -240,8 +337,10 @@ export default function BuilderPage() {
               <textarea
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Talk with EchoMe."
-                className="flex-1 w-full h-full border-0 outline-none text-white placeholder:text-white font-semibold text-sm resize-none"
+                disabled={isSending || !sandboxId}
+                className="flex-1 w-full h-full border-0 outline-none text-white placeholder:text-white font-semibold text-sm resize-none disabled:opacity-50"
               />
 
               {/* Absolute Buttons */}
@@ -250,7 +349,11 @@ export default function BuilderPage() {
                   <Mic className="w-5 h-5 text-white" strokeWidth={1.5} />
                 </button>
 
-                <button className="hover:opacity-80 rounded-full flex items-center justify-center w-[1.875rem] h-[1.875rem] bg-[#3C3C3C]">
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isSending || !sandboxId || !chatInput.trim()}
+                  className="hover:opacity-80 rounded-full flex items-center justify-center w-[1.875rem] h-[1.875rem] bg-[#3C3C3C] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <ArrowUp className="w-5 h-5 text-white" strokeWidth={1.5} />
                 </button>
               </div>
