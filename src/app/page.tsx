@@ -264,7 +264,7 @@ export default function Home() {
                 className="w-full h-full bg-transparent border-0 outline-none text-white placeholder:text-gray-500 text-sm resize-none"
                 style={{ outline: "none", boxShadow: "none" }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && e.ctrlKey) {
+                  if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
                     e.preventDefault();
                     handleSubmit();
                   }
