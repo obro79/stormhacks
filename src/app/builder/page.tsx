@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-import { Mic, Plus, MessageSquare, ArrowUp, ExternalLink, Download } from "lucide-react";
+import { Mic, ArrowUp, ExternalLink, Download } from "lucide-react";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -30,7 +30,7 @@ export default function BuilderPage() {
     const message = searchParams.get("message");
     const sessionIdParam = searchParams.get("sessionId");
     const status = searchParams.get("status");
-    
+
     // Store sessionId in state
     if (sessionIdParam) {
       setSessionId(sessionIdParam);
@@ -67,21 +67,23 @@ export default function BuilderPage() {
         ]);
 
         // Check if complete
-        if (data.message.startsWith('COMPLETE:')) {
-          const url = data.message.replace('COMPLETE:', '');
+        if (data.message.startsWith("COMPLETE:")) {
+          const url = data.message.replace("COMPLETE:", "");
 
           // Fetch with skip-warning header first to bypass Daytona warning page
           fetch(url, {
-            method: 'HEAD',
+            method: "HEAD",
             headers: {
-              'X-Daytona-Skip-Preview-Warning': 'true'
-            }
-          }).catch(() => {
-            // Ignore errors, just trying to set the cookie/bypass warning
-          }).finally(() => {
-            setSandboxUrl(url);
-            setIframeLoading(true);
-          });
+              "X-Daytona-Skip-Preview-Warning": "true",
+            },
+          })
+            .catch(() => {
+              // Ignore errors, just trying to set the cookie/bypass warning
+            })
+            .finally(() => {
+              setSandboxUrl(url);
+              setIframeLoading(true);
+            });
 
           eventSource.close();
         } else if (data.message.startsWith("ERROR:")) {
@@ -113,17 +115,19 @@ export default function BuilderPage() {
 
       // Fetch with skip-warning header first to bypass Daytona warning page
       fetch(url, {
-        method: 'HEAD',
+        method: "HEAD",
         headers: {
-          'X-Daytona-Skip-Preview-Warning': 'true'
-        }
-      }).catch(() => {
-        // Ignore errors, just trying to set the cookie/bypass warning
-      }).finally(() => {
-        setSandboxUrl(url);
-        setIframeLoading(true);
-        console.log("🔗 Loading preview:", url);
-      });
+          "X-Daytona-Skip-Preview-Warning": "true",
+        },
+      })
+        .catch(() => {
+          // Ignore errors, just trying to set the cookie/bypass warning
+        })
+        .finally(() => {
+          setSandboxUrl(url);
+          setIframeLoading(true);
+          console.log("🔗 Loading preview:", url);
+        });
     }
 
     // Default demo if no params
@@ -145,20 +149,20 @@ export default function BuilderPage() {
 
   const handleDownload = async () => {
     if (!sessionId) {
-      console.error('No session ID available for download');
+      console.error("No session ID available for download");
       return;
     }
 
     try {
       const response = await fetch(`/api/download?sessionId=${sessionId}`);
-      
+
       if (!response.ok) {
-        throw new Error('Failed to download files');
+        throw new Error("Failed to download files");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `dayton-sandbox-code-${sessionId}.zip`;
       document.body.appendChild(a);
@@ -166,14 +170,14 @@ export default function BuilderPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error downloading files:', error);
+      console.error("Error downloading files:", error);
     }
   };
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isThinking) return;
 
     const userMessage = chatInput;
-    console.log('💬 Sending message:', userMessage);
+    console.log("💬 Sending message:", userMessage);
 
     // Add user message to chat immediately
     setMessages((prev) => [
@@ -290,15 +294,32 @@ export default function BuilderPage() {
         <div className="flex-1" />
 
         {/* Deploy button */}
-        <div className="mr-2">
-          <Button
-            className="text-white hover:opacity-75"
-            style={{
-              background: "#22C55E",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-            }}
-          >
+        <div className="mr-2 flex justify-center gap-2 ">
+          {/* Preview Header with Open in New Tab and Download buttons */}
+          {sandboxUrl && (
+            <div className="flex justify-end gap-2">
+              {sessionId && (
+                <Button
+                  onClick={handleDownload}
+                  variant="outline"
+                  className="flex items-center gap-2 hover:opacity-90 text-sm font-medium"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Code
+                </Button>
+              )}
+              <Button
+                onClick={() => window.open(sandboxUrl, "_blank")}
+                variant="outline"
+                className="flex items-center gap-2 hover:opacity-90 text-sm font-medium"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open in New Tab
+              </Button>
+            </div>
+          )}
+
+          <Button className="text-white hover:opacity-75 bg-[#22C55E] text-md font-semibold">
             Deploy
           </Button>
         </div>
@@ -320,11 +341,19 @@ export default function BuilderPage() {
                 {message.type === "user" ? (
                   <div className="flex justify-end">
                     <div className="inline-block p-3 rounded-2xl bg-[#3A3A3A] text-white text-right font-medium text-sm max-w-[75%] break-words whitespace-pre-line">
+                      <div className="mb-2 font-semibold text-neutral-500">
+                        User
+                      </div>
+
                       {message.content}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-[#F8F8F8] font-[Geist] font-medium text-sm whitespace-pre-line">
+                  <div className="inline-block p-3 rounded-2xl bg-[#3A3A3A] text-white text-left font-regular text-sm  break-words whitespace-pre-line">
+                    <div className="mb-2 font-semibold text-neutral-500">
+                      Echo Me
+                    </div>
+
                     {message.content}
                   </div>
                 )}
@@ -349,8 +378,8 @@ export default function BuilderPage() {
                     handleSendMessage();
                   }
                 }}
-                placeholder="Talk with EchoMe."
-                className="flex-1 w-full h-full border-0 outline-none text-white placeholder:text-white font-semibold text-sm resize-none"
+                placeholder="Talk with EchoMe..."
+                className="flex-1 w-full h-full border-0 outline-none text-white placeholder:text-neutral-500 placeholder:font-medium font-semibold text-sm resize-none"
                 disabled={isThinking}
               />
 
@@ -364,7 +393,9 @@ export default function BuilderPage() {
                   onClick={handleSendMessage}
                   disabled={!chatInput.trim() || isThinking}
                   className={`hover:opacity-80 rounded-full flex items-center justify-center w-[1.875rem] h-[1.875rem] bg-[#3C3C3C] ${
-                    (!chatInput.trim() || isThinking) ? 'opacity-50 cursor-not-allowed' : ''
+                    !chatInput.trim() || isThinking
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
                   }`}
                 >
                   <ArrowUp className="w-5 h-5 text-white" strokeWidth={1.5} />
@@ -376,38 +407,6 @@ export default function BuilderPage() {
 
         {/* Right Panel - Preview */}
         <div className="flex-1 flex flex-col mx-2">
-          {/* Preview Header with Open in New Tab and Download buttons */}
-          {sandboxUrl && (
-            <div className="flex justify-end gap-2 mb-4">
-              {sessionId && (
-                <Button
-                  onClick={handleDownload}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  style={{
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                  }}
-                >
-                  <Download className="w-4 h-4" />
-                  Download Code
-                </Button>
-              )}
-              <Button
-                onClick={() => window.open(sandboxUrl, "_blank")}
-                variant="outline"
-                className="flex items-center gap-2"
-                style={{
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                }}
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open in New Tab
-              </Button>
-            </div>
-          )}
-
           <div className="flex-1 rounded overflow-hidden bg-[#282924] border border-[rgba(255,255,255,0.15)]">
             {activeTab === "preview" && (
               <div className="w-full h-full relative">
