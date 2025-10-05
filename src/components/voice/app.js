@@ -79,7 +79,7 @@ function App() {
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
-  const apiKey = "bca7291ff16b9ea374e6b31c9e17d901db0c48e5aa672d25e6e6a02f23764d33";
+  const apiKey = process.env.ELEVENLABS_API_KEY || "";
 
   // Clear error when starting new actions
   const clearError = () => setError(null);

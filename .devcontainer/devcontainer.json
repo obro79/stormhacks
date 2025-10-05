@@ -1,0 +1,83 @@
+{
+  "name": "StormHacks - Next.js Development",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    },
+
+    "daytona": {
+      "deploy": {
+        "enabled": true,
+        "commands": [
+          {
+            "name": "🚀 Full Deploy (Commit + Push + Vercel)",
+            "command": "npm run deploy",
+            "description": "Complete deployment: commits changes, pushes to GitHub, and deploys to Vercel",
+            "requireConfirmation": true
+          },
+          {
+            "name": "⚡ Quick Deploy (Commit + Push)",
+            "command": "npm run deploy:quick",
+            "description": "Quickly commit and push changes to GitHub (auto-deploys if GitHub integration is enabled)",
+            "requireConfirmation": false
+          },
+          {
+            "name": "📦 Deploy to Vercel Only",
+            "command": "npm run deploy:vercel",
+            "description": "Deploy current state directly to Vercel without git operations",
+            "requireConfirmation": false
+          },
+          {
+            "name": "💬 Deploy with Custom Message",
+            "command": "bash scripts/deploy.sh",
+            "description": "Deploy with a custom commit message (you'll be prompted)",
+            "requireConfirmation": true,
+            "promptForInput": {
+              "message": "Enter commit message:",
+              "default": "Deploy: updates"
+            }
+          }
+        ],
+        "defaultCommand": "npm run deploy"
+      },
+
+      "tasks": [
+        {
+          "name": "Install Dependencies",
+          "command": "npm install"
+        },
+        {
+          "name": "Setup Vercel",
+          "command": "npm run setup-vercel"
+        }
+      ]
+    }
+  },
+
+  "postCreateCommand": "npm install",
+
+  "forwardPorts": [3000],
+
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js Dev Server",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "remoteUser": "node"
+}

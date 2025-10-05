@@ -22,6 +22,8 @@ export default function BuilderPage() {
   >([]);
   const [iframeLoading, setIframeLoading] = useState(true);
   const [isThinking, setIsThinking] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deployMessage, setDeployMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Read URL params
@@ -173,6 +175,57 @@ export default function BuilderPage() {
       console.error("Error downloading files:", error);
     }
   };
+  const handleDeploy = async () => {
+    if (isDeploying) return;
+
+    // Check if we have a session/sandbox to deploy
+    if (!sessionId) {
+      setDeployMessage("❌ No app to deploy. Build an app first!");
+      setTimeout(() => setDeployMessage(null), 5000);
+      return;
+    }
+
+    setIsDeploying(true);
+    setDeployMessage(null);
+
+    try {
+      console.log("🚀 Starting sandbox deployment...", { sessionId });
+
+      const response = await fetch("/api/deploy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sessionId: sessionId,
+          deployType: "sandbox", // Indicates this is a sandbox deployment
+          commitMessage: `Deploy sandbox app: ${new Date().toLocaleString()}`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log("✅ Deployment successful!", data);
+        const message = data.deploymentUrl
+          ? `🎉 Deployed! URL: ${data.deploymentUrl}`
+          : "🎉 Deployed successfully! Check Vercel for status.";
+        setDeployMessage(message);
+
+        // Clear success message after 10 seconds
+        setTimeout(() => setDeployMessage(null), 10000);
+      } else {
+        console.error("❌ Deployment failed:", data.error);
+        setDeployMessage(`❌ ${data.error || "Deployment failed"}`);
+      }
+    } catch (error) {
+      console.error("❌ Deployment error:", error);
+      setDeployMessage("❌ Deployment failed. Check console for details.");
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isThinking) return;
 
@@ -294,10 +347,10 @@ export default function BuilderPage() {
         <div className="flex-1" />
 
         {/* Deploy button */}
-        <div className="mr-2 flex justify-center gap-2 ">
+        <div className="mr-2 flex items-center gap-2">
           {/* Preview Header with Open in New Tab and Download buttons */}
           {sandboxUrl && (
-            <div className="flex justify-end gap-2">
+            <>
               {sessionId && (
                 <Button
                   onClick={handleDownload}
@@ -316,11 +369,31 @@ export default function BuilderPage() {
                 <ExternalLink className="w-4 h-4" />
                 Open in New Tab
               </Button>
-            </div>
+            </>
           )}
 
-          <Button className="text-white hover:opacity-75 bg-[#22C55E] text-md font-semibold">
-            Deploy
+          {deployMessage && (
+            <div
+              className={`text-sm font-medium px-3 py-1 rounded ${
+                deployMessage.includes("successfully")
+                  ? "text-green-400"
+                  : "text-red-400"
+              }`}
+            >
+              {deployMessage}
+            </div>
+          )}
+          <Button
+            onClick={handleDeploy}
+            disabled={isDeploying}
+            className="text-white hover:opacity-75 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: "#22C55E",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+            }}
+          >
+            {isDeploying ? "Deploying..." : "Deploy"}
           </Button>
         </div>
       </header>
