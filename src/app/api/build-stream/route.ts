@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { buildApp } from '@/lib/orchestrator';
-import { storeFiles } from '../download/route';
+import { storeFiles } from '@/lib/filesStore';
 
 // Store for progress updates
 const progressStore = new Map<string, string[]>();

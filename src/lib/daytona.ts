@@ -3,6 +3,31 @@ import { FileChange } from './types';
 
 const DAYTONA_API_KEY = process.env.DAYTONA_API_KEY;
 
+// Type definitions
+interface DaytonaConfig {
+  apiKey: string;
+  apiUrl?: string;
+  target?: string;
+}
+
+// Type definitions for potential future use
+// interface DaytonaTask {
+//   id: string;
+//   name: string;
+//   args?: Record<string, unknown>;
+// }
+
+// interface DaytonaResult {
+//   stdout?: string;
+//   stderr?: string;
+//   code: number;
+// }
+
+// Type guard for safe type narrowing
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
 async function waitForServer(url: string, onProgress?: (message: string) => void, maxRetries = 30): Promise<boolean> {
   console.log('⏳ Waiting for server to be ready...');
 
@@ -18,7 +43,7 @@ async function waitForServer(url: string, onProgress?: (message: string) => void
         console.log(`✅ Server is ready! (attempt ${i + 1}/${maxRetries})`);
         return true;
       }
-    } catch (error) {
+    } catch {
       // Expected to fail while server is starting
       console.log(`⏳ Server not ready yet (attempt ${i + 1}/${maxRetries})...`);
       if (i % 5 === 0 && i > 0) {
@@ -47,7 +72,7 @@ export async function createDaytonaSandbox(files: FileChange[], onProgress?: (me
   }
 
   // Build config object - only include defined values
-  const daytonaConfig: any = {
+  const daytonaConfig: DaytonaConfig = {
     apiKey: DAYTONA_API_KEY,
   };
 
@@ -73,27 +98,33 @@ export async function createDaytonaSandbox(files: FileChange[], onProgress?: (me
       image: 'node:20'
     });
     console.log('✅ Sandbox created successfully:', sandbox.id);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Failed to create Daytona sandbox');
-    console.error('Error details:', {
-      message: error.message,
-      statusCode: error.statusCode || error.response?.status,
-      errorCode: error.code,
-      timestamp: error.timestamp,
-      path: error.path,
-      method: error.method,
-      responseData: error.response?.data,
-      fullError: JSON.stringify(error, null, 2)
-    });
 
-    // Provide helpful error message
-    if (error.message?.includes('runner info')) {
-      throw new Error(`Daytona runner not found. This usually means:
+    if (error instanceof Error && isRecord(error)) {
+      const errorRecord = error as Record<string, unknown>;
+      const response = isRecord(errorRecord.response) ? errorRecord.response : {};
+
+      console.error('Error details:', {
+        message: error.message,
+        statusCode: errorRecord.statusCode || (isRecord(response) && response.status) || undefined,
+        errorCode: errorRecord.code,
+        timestamp: errorRecord.timestamp,
+        path: errorRecord.path,
+        method: errorRecord.method,
+        responseData: isRecord(response) && response.data,
+        fullError: JSON.stringify(error, null, 2)
+      });
+
+      // Provide helpful error message
+      if (error.message?.includes('runner info')) {
+        throw new Error(`Daytona runner not found. This usually means:
 1. Invalid DAYTONA_TARGET (current: ${process.env.DAYTONA_TARGET})
 2. No runner available in the specified target region
 3. API URL incorrect (current: ${process.env.DAYTONA_API_URL})
 
 Original error: ${error.message}`);
+      }
     }
 
     throw error;
@@ -275,8 +306,15 @@ export async function listAllSandboxes(): Promise<string[]> {
   console.log('📋 List response:', response);
 
   // Handle different response formats
-  const sandboxes = Array.isArray(response) ? response : (response as any).sandboxes || [];
-  return sandboxes.map((s: any) => s.id);
+  const sandboxes = Array.isArray(response)
+    ? response
+    : (isRecord(response) && Array.isArray(response.sandboxes) ? response.sandboxes : []);
+  return sandboxes.map((s: unknown) => {
+    if (isRecord(s) && typeof s.id === 'string') {
+      return s.id;
+    }
+    return '';
+  }).filter(id => id !== '');
 }
 
 export async function deleteAllSandboxes(): Promise<{ deleted: number; ids: string[] }> {
@@ -291,7 +329,9 @@ export async function deleteAllSandboxes(): Promise<{ deleted: number; ids: stri
   console.log('📋 List response:', response);
 
   // Handle different response formats
-  const sandboxes = Array.isArray(response) ? response : (response as any).sandboxes || [];
+  const sandboxes = Array.isArray(response)
+    ? response
+    : (isRecord(response) && Array.isArray(response.sandboxes) ? response.sandboxes : []);
 
   console.log(`📊 Found ${sandboxes.length} sandbox(es) to delete`);
 
@@ -299,12 +339,16 @@ export async function deleteAllSandboxes(): Promise<{ deleted: number; ids: stri
 
   for (const sandbox of sandboxes) {
     try {
-      console.log(`🗑️  Deleting sandbox: ${sandbox.id}`);
-      await sandbox.delete();
-      deletedIds.push(sandbox.id);
-      console.log(`✅ Deleted: ${sandbox.id}`);
+      if (isRecord(sandbox) && typeof sandbox.id === 'string') {
+        console.log(`🗑️  Deleting sandbox: ${sandbox.id}`);
+        if (typeof (sandbox as { delete?: () => Promise<void> }).delete === 'function') {
+          await (sandbox as { delete: () => Promise<void> }).delete();
+        }
+        deletedIds.push(sandbox.id);
+        console.log(`✅ Deleted: ${sandbox.id}`);
+      }
     } catch (error) {
-      console.error(`❌ Failed to delete ${sandbox.id}:`, error);
+      console.error(`❌ Failed to delete sandbox:`, error);
     }
   }
 

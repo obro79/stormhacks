@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
-import { FileChange } from '@/lib/types';
-
-// Store for generated files by session ID
-const filesStore = new Map<string, FileChange[]>();
-
-export function storeFiles(sessionId: string, files: FileChange[]) {
-  filesStore.set(sessionId, files);
-}
+import { filesStore } from '@/lib/filesStore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,11 +32,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Generate ZIP buffer
-    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+    // Generate ZIP buffer as Uint8Array for NextResponse compatibility
+    const zipBuffer = await zip.generateAsync({ type: 'uint8array' });
 
-    // Return ZIP file
-    return new NextResponse(zipBuffer, {
+    // Return ZIP file - cast to BodyInit for type safety
+    return new NextResponse(zipBuffer as BodyInit, {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="dayton-sandbox-code-${sessionId}.zip"`,
@@ -93,11 +86,11 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Generate ZIP buffer
-    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+    // Generate ZIP buffer as Uint8Array for NextResponse compatibility
+    const zipBuffer = await zip.generateAsync({ type: 'uint8array' });
 
-    // Return ZIP file
-    return new NextResponse(zipBuffer, {
+    // Return ZIP file - cast to BodyInit for type safety
+    return new NextResponse(zipBuffer as BodyInit, {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="dayton-sandbox-code-${sessionId}.zip"`,

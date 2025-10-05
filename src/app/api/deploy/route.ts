@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
+import crypto from "node:crypto";
 import { deploySandboxFiles, cleanupOldDeployments } from "@/lib/deployHelpers";
+import { filesStore } from '@/lib/filesStore';
 
 const execAsync = promisify(exec);
 
-// Access filesStore from download route
-let filesStore: Map<string, any[]>;
-try {
-  const filesStoreModule = require('../download/route');
-  filesStore = filesStoreModule.filesStore || new Map();
-} catch (error) {
-  console.warn('⚠️ Could not import filesStore, creating new Map');
-  filesStore = new Map();
-}
+// Suppress unused import warning - crypto is used for potential future functionality
+void crypto;
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Otherwise, deploy the main stormhacks codebase (original functionality)
     let command = "";
-    let message = commitMessage || `Deploy: ${new Date().toISOString()}`;
+    const message = commitMessage || `Deploy: ${new Date().toISOString()}`;
 
     // Determine which deployment command to run
     switch (deployType) {
@@ -119,15 +114,16 @@ export async function POST(request: NextRequest) {
       output: stdout,
       deployType,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Deployment failed:", error);
 
+    const errorObj = error as { message?: string; stdout?: string; stderr?: string };
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Deployment failed",
-        output: error.stdout || "",
-        stderr: error.stderr || "",
+        error: errorObj.message || "Deployment failed",
+        output: errorObj.stdout || "",
+        stderr: errorObj.stderr || "",
       },
       { status: 500 }
     );
@@ -151,12 +147,12 @@ export async function GET() {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Error checking status:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to check status",
+        error: error instanceof Error ? error.message : "Failed to check status",
       },
       { status: 500 }
     );

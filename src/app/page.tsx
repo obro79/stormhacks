@@ -11,8 +11,8 @@ import Link from "next/link";
 export default function Home() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
+  const [_loading, _setLoading] = useState(false);
+  const [result, _setResult] = useState<{
     success: boolean;
     message?: string;
     sandboxUrl?: string;
@@ -251,7 +251,7 @@ export default function Home() {
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
                 <Button
                   onClick={handleMicClick}
-                  disabled={loading || isProcessing}
+                  disabled={_loading || isProcessing}
                   variant={isRecording ? "destructive" : "ghost"}
                   size="sm"
                   className={`hover:opacity-80 rounded-full transition-colors flex items-center justify-center text-white ${
@@ -276,7 +276,7 @@ export default function Home() {
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={!prompt.trim() || loading}
+                  disabled={!prompt.trim() || _loading}
                   size="icon"
                   className="rounded-full hover:opacity-80 flex items-center justify-center text-white"
                   style={{

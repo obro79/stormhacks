@@ -83,8 +83,8 @@ node_modules/
         { cwd: deployDir }
       );
       console.log(`  ✅ Changes committed`);
-    } catch (error: any) {
-      if (error.message.includes('nothing to commit')) {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message.includes('nothing to commit')) {
         console.log(`  ℹ️  No changes to commit`);
       } else {
         throw error;
@@ -93,7 +93,7 @@ node_modules/
 
     // Step 6: Deploy to Vercel
     console.log(`🚀 Deploying to Vercel...`);
-    const { stdout, stderr } = await execAsync(
+    const { stdout } = await execAsync(
       'npx vercel --prod --yes',
       {
         cwd: deployDir,
@@ -118,12 +118,12 @@ node_modules/
       message: 'Deployment successful!',
       deploymentUrl,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ Deployment failed:`, error);
     return {
       success: false,
       message: 'Deployment failed',
-      error: error.message || 'Unknown error',
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }

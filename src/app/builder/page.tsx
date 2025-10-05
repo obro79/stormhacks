@@ -10,6 +10,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function BuilderPage() {
+  // Using dynamic route to avoid SSG issues with searchParams
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "share">(
     "preview"

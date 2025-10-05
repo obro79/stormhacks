@@ -192,7 +192,7 @@ function App() {
         }
       };
 
-      mediaRecorderRef.current.onerror = (event) => {
+      mediaRecorderRef.current.onerror = (_event) => {
         setError('Recording error occurred. Please try again.');
         setIsRecording(false);
         if (timerRef.current) {
@@ -352,5 +352,9 @@ function App() {
   );
 }
 
-// Render the app
-ReactDOM.render(React.createElement(App), document.getElementById('root'));
+// Render the app with React 18 API
+const container = document.getElementById('root');
+if (container) {
+  const root = ReactDOM.createRoot(container);
+  root.render(React.createElement(App));
+}
