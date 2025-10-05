@@ -3,6 +3,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
+import { createGitHubRepo, generateProjectName } from './githubService';
+import { deployToVercel } from './vercelService';
 
 const execAsync = promisify(exec);
 
@@ -10,6 +12,8 @@ export interface DeploymentResult {
   success: boolean;
   message: string;
   deploymentUrl?: string;
+  githubUrl?: string;
+  repoName?: string;
   error?: string;
 }
 
@@ -117,6 +121,74 @@ node_modules/
       success: true,
       message: 'Deployment successful!',
       deploymentUrl,
+    };
+  } catch (error: unknown) {
+    console.error(`❌ Deployment failed:`, error);
+    return {
+      success: false,
+      message: 'Deployment failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Deploy sandbox files to GitHub and Vercel (one-click deploy)
+ */
+export async function deployToGitHubAndVercel(
+  files: FileChange[],
+  sessionId: string,
+  projectPrompt?: string
+): Promise<DeploymentResult> {
+  try {
+    console.log(`🚀 Starting GitHub + Vercel deployment for session: ${sessionId}`);
+
+    // Step 1: Generate project name from prompt
+    const projectName = generateProjectName(projectPrompt);
+    console.log(`📝 Project name: ${projectName}`);
+
+    // Step 2: Create GitHub repository and push code
+    console.log(`📦 Creating GitHub repository...`);
+    const githubResult = await createGitHubRepo(files, projectName);
+
+    if (!githubResult.success || !githubResult.repoUrl || !githubResult.repoName) {
+      return {
+        success: false,
+        message: 'Failed to create GitHub repository',
+        error: githubResult.error,
+      };
+    }
+
+    console.log(`✅ GitHub repo created: ${githubResult.repoUrl}`);
+
+    // Step 3: Deploy to Vercel
+    console.log(`🚀 Deploying to Vercel...`);
+    const vercelResult = await deployToVercel(
+      githubResult.repoUrl,
+      githubResult.repoName
+    );
+
+    if (!vercelResult.success) {
+      // GitHub repo was created but Vercel deployment failed
+      return {
+        success: false,
+        message: 'GitHub repo created, but Vercel deployment failed',
+        githubUrl: githubResult.repoUrl,
+        repoName: githubResult.repoName,
+        error: vercelResult.error,
+      };
+    }
+
+    console.log(`✅ Deployment complete!`);
+    console.log(`📍 GitHub: ${githubResult.repoUrl}`);
+    console.log(`📍 Vercel: ${vercelResult.deploymentUrl}`);
+
+    return {
+      success: true,
+      message: 'Successfully deployed to GitHub and Vercel!',
+      deploymentUrl: vercelResult.deploymentUrl,
+      githubUrl: githubResult.repoUrl,
+      repoName: githubResult.repoName,
     };
   } catch (error: unknown) {
     console.error(`❌ Deployment failed:`, error);

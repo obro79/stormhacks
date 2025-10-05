@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { buildApp } from '@/lib/orchestrator';
-import { storeFiles } from '@/lib/filesStore';
+import { storeFiles, filesStore } from '@/lib/filesStore';
 
 // Store for progress updates
 const progressStore = new Map<string, string[]>();
@@ -30,14 +30,16 @@ export async function POST(request: NextRequest) {
       addProgress('🧠 Calling Claude to generate code...');
       const result = await buildApp(prompt, addProgress);
 
+      // ✅ Store files IMMEDIATELY after generation (before checking success)
+      if (result.files && result.files.length > 0) {
+        console.log(`📦 Storing ${result.files.length} files for session: ${sessionId}`);
+        storeFiles(sessionId, result.files);
+        console.log(`✅ Files stored. Available sessions:`, Array.from(filesStore.keys()));
+      }
+
       if (result.success && result.sandboxUrl) {
         addProgress(`✅ Preview ready! ${result.sandboxUrl}`);
         addProgress(`COMPLETE:${result.sandboxUrl}`);
-        
-        // Store files for download
-        if (result.files && result.files.length > 0) {
-          storeFiles(sessionId, result.files);
-        }
       } else {
         addProgress(`❌ ${result.message}`);
         addProgress(`ERROR:${result.message}`);

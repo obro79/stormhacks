@@ -25,6 +25,8 @@ export default function BuilderPage() {
   const [isThinking, setIsThinking] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [deployMessage, setDeployMessage] = useState<string | null>(null);
+  const [githubUrl, setGithubUrl] = useState<string | null>(null);
+  const [projectPrompt, setProjectPrompt] = useState<string>("");
 
   useEffect(() => {
     // Read URL params
@@ -46,6 +48,8 @@ export default function BuilderPage() {
         type: "user",
         content: prompt,
       });
+      // Store prompt for deployment
+      setProjectPrompt(prompt);
     }
 
     // If building, start listening to SSE
@@ -187,10 +191,11 @@ export default function BuilderPage() {
     }
 
     setIsDeploying(true);
-    setDeployMessage(null);
+    setDeployMessage("🚀 Creating GitHub repo...");
+    setGithubUrl(null);
 
     try {
-      console.log("🚀 Starting sandbox deployment...", { sessionId });
+      console.log("🚀 Starting GitHub + Vercel deployment...", { sessionId, projectPrompt });
 
       const response = await fetch("/api/deploy", {
         method: "POST",
@@ -199,8 +204,9 @@ export default function BuilderPage() {
         },
         body: JSON.stringify({
           sessionId: sessionId,
-          deployType: "sandbox", // Indicates this is a sandbox deployment
-          commitMessage: `Deploy sandbox app: ${new Date().toLocaleString()}`,
+          deployType: "github-vercel", // NEW: GitHub + Vercel deployment
+          projectPrompt: projectPrompt,
+          commitMessage: `Deploy: ${projectPrompt || "Generated project"}`,
         }),
       });
 
@@ -208,16 +214,37 @@ export default function BuilderPage() {
 
       if (data.success) {
         console.log("✅ Deployment successful!", data);
+
+        // Store GitHub URL
+        if (data.githubUrl) {
+          setGithubUrl(data.githubUrl);
+        }
+
+        // Show success message
         const message = data.deploymentUrl
-          ? `🎉 Deployed! URL: ${data.deploymentUrl}`
-          : "🎉 Deployed successfully! Check Vercel for status.";
+          ? `🎉 Deployed! Opening in new tab...`
+          : "🎉 GitHub repo created! Vercel deployment in progress...";
         setDeployMessage(message);
+
+        // AUTO-OPEN deployment URL in new tab
+        if (data.deploymentUrl) {
+          setTimeout(() => {
+            window.open(data.deploymentUrl, '_blank');
+          }, 1000); // Small delay for better UX
+        }
 
         // Clear success message after 10 seconds
         setTimeout(() => setDeployMessage(null), 10000);
       } else {
         console.error("❌ Deployment failed:", data.error);
-        setDeployMessage(`❌ ${data.error || "Deployment failed"}`);
+
+        // Store GitHub URL even if Vercel failed
+        if (data.githubUrl) {
+          setGithubUrl(data.githubUrl);
+          setDeployMessage(`⚠️ GitHub repo created, but Vercel deployment failed: ${data.error}`);
+        } else {
+          setDeployMessage(`❌ ${data.error || "Deployment failed"}`);
+        }
       }
     } catch (error) {
       console.error("❌ Deployment error:", error);
@@ -373,11 +400,25 @@ export default function BuilderPage() {
             </>
           )}
 
+          {/* GitHub repo link */}
+          {githubUrl && (
+            <Button
+              onClick={() => window.open(githubUrl, "_blank")}
+              variant="outline"
+              className="flex items-center gap-2 hover:opacity-90 text-sm font-medium"
+            >
+              <ExternalLink className="w-4 h-4" />
+              View on GitHub
+            </Button>
+          )}
+
           {deployMessage && (
             <div
               className={`text-sm font-medium px-3 py-1 rounded ${
-                deployMessage.includes("successfully")
+                deployMessage.includes("🎉") || deployMessage.includes("✅")
                   ? "text-green-400"
+                  : deployMessage.includes("⚠️")
+                  ? "text-yellow-400"
                   : "text-red-400"
               }`}
             >

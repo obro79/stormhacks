@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
 import crypto from "node:crypto";
-import { deploySandboxFiles, cleanupOldDeployments } from "@/lib/deployHelpers";
+import {
+  deploySandboxFiles,
+  cleanupOldDeployments,
+  deployToGitHubAndVercel
+} from "@/lib/deployHelpers";
 import { filesStore } from '@/lib/filesStore';
 
 const execAsync = promisify(exec);
@@ -13,20 +17,19 @@ void crypto;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { commitMessage, deployType = "full", sessionId, sandboxId } = body;
+    const { commitMessage, deployType = "github-vercel", sessionId, sandboxId, projectPrompt } = body;
 
     console.log("🚀 Starting deployment...", {
       commitMessage,
       deployType,
       sessionId,
       sandboxId,
+      projectPrompt,
       isSandboxDeploy: !!sessionId
     });
 
     // If sessionId is provided, deploy the sandbox files
     if (sessionId) {
-      console.log("📦 Deploying sandbox files...");
-
       // Get files from store
       const files = filesStore.get(sessionId);
 
@@ -44,27 +47,56 @@ export async function POST(request: NextRequest) {
 
       console.log(`📁 Found ${files.length} files for session ${sessionId}`);
 
-      // Deploy sandbox files to Vercel
-      const result = await deploySandboxFiles(files, sessionId);
+      // Choose deployment strategy based on deployType
+      if (deployType === "github-vercel") {
+        // NEW: Deploy to GitHub + Vercel (one-click)
+        console.log("📦 Deploying to GitHub + Vercel...");
+        const result = await deployToGitHubAndVercel(files, sessionId, projectPrompt);
 
-      // Clean up old deployments (keep last 5)
-      await cleanupOldDeployments(5);
-
-      if (result.success) {
-        return NextResponse.json({
-          success: true,
-          message: result.message,
-          deploymentUrl: result.deploymentUrl,
-          filesDeployed: files.length,
-        });
+        if (result.success) {
+          return NextResponse.json({
+            success: true,
+            message: result.message,
+            deploymentUrl: result.deploymentUrl,
+            githubUrl: result.githubUrl,
+            repoName: result.repoName,
+            filesDeployed: files.length,
+          });
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              error: result.error || "Deployment failed",
+              githubUrl: result.githubUrl, // May have GitHub URL even if Vercel failed
+              repoName: result.repoName,
+            },
+            { status: 500 }
+          );
+        }
       } else {
-        return NextResponse.json(
-          {
-            success: false,
-            error: result.error || "Deployment failed",
-          },
-          { status: 500 }
-        );
+        // OLD: Legacy Vercel-only deployment
+        console.log("📦 Deploying sandbox files (legacy mode)...");
+        const result = await deploySandboxFiles(files, sessionId);
+
+        // Clean up old deployments (keep last 5)
+        await cleanupOldDeployments(5);
+
+        if (result.success) {
+          return NextResponse.json({
+            success: true,
+            message: result.message,
+            deploymentUrl: result.deploymentUrl,
+            filesDeployed: files.length,
+          });
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              error: result.error || "Deployment failed",
+            },
+            { status: 500 }
+          );
+        }
       }
     }
 
