@@ -97,16 +97,10 @@ export default function Home() {
       formData.append("file", audioBlob, "audio.webm");
       formData.append("model_id", "scribe_v1");
 
-      const response = await fetch(
-        "https://api.elevenlabs.io/v1/speech-to-text",
-        {
-          method: "POST",
-          headers: {
-            "xi-api-key": process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || "",
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
 
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`);

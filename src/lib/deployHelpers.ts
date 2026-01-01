@@ -8,6 +8,17 @@ import { deployToVercel } from './vercelService';
 
 const execAsync = promisify(exec);
 
+/**
+ * Validate that a file path doesn't escape the base directory (path traversal protection)
+ */
+function validateFilePath(basePath: string, filePath: string): string {
+  const resolvedPath = path.resolve(path.join(basePath, filePath));
+  if (!resolvedPath.startsWith(path.resolve(basePath) + path.sep)) {
+    throw new Error(`Path traversal detected: ${filePath}`);
+  }
+  return resolvedPath;
+}
+
 export interface DeploymentResult {
   success: boolean;
   message: string;
@@ -24,6 +35,14 @@ export async function deploySandboxFiles(
   files: FileChange[],
   sessionId: string
 ): Promise<DeploymentResult> {
+  // Input validation
+  if (!Array.isArray(files) || files.length === 0) {
+    return { success: false, message: 'Validation failed', error: 'No files provided' };
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
+    return { success: false, message: 'Validation failed', error: 'Invalid session ID format' };
+  }
+
   const deployDir = path.join(process.cwd(), '.deployments', sessionId);
 
   try {
@@ -37,7 +56,8 @@ export async function deploySandboxFiles(
     console.log(`📝 Writing ${files.length} files to deployment directory...`);
     for (const file of files) {
       if (file.operation !== 'delete') {
-        const filePath = path.join(deployDir, file.path);
+        // Validate file path to prevent path traversal attacks
+        const filePath = validateFilePath(deployDir, file.path);
         const fileDir = path.dirname(filePath);
 
         // Create directory if it doesn't exist
@@ -80,6 +100,11 @@ node_modules/
     // Step 5: Commit changes
     console.log(`💾 Committing changes...`);
     await execAsync('git add .', { cwd: deployDir });
+
+    // Validate sessionId format before using in shell command to prevent command injection
+    if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
+      throw new Error('Invalid session ID format');
+    }
 
     try {
       await execAsync(

@@ -2,6 +2,18 @@ import { FileChange } from './types';
 
 const GITHUB_API = 'https://api.github.com';
 
+function sanitizeFilePath(filePath: string): string {
+  const normalized = filePath.replace(/^\/+/, '').replace(/\.\.\//g, '');
+  if (normalized.startsWith('..') || normalized.includes('/../')) {
+    throw new Error(`Invalid file path: ${filePath}`);
+  }
+  return normalized;
+}
+
+function validateUsername(username: string): boolean {
+  return /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/.test(username);
+}
+
 export interface GitHubRepoResult {
   success: boolean;
   repoUrl?: string;
@@ -18,6 +30,14 @@ export async function createGitHubRepo(
   projectName: string,
   username: string = process.env.GITHUB_USERNAME || ''
 ): Promise<GitHubRepoResult> {
+  if (!files || files.length === 0) {
+    return { success: false, error: 'No files provided' };
+  }
+
+  if (!validateUsername(username)) {
+    return { success: false, error: 'Invalid username' };
+  }
+
   const token = process.env.GITHUB_TOKEN;
 
   if (!token) {
@@ -139,7 +159,7 @@ export async function createGitHubRepo(
       const blobData = await blobResponse.json();
 
       tree.push({
-        path: file.path,
+        path: sanitizeFilePath(file.path),
         mode: '100644', // Regular file
         type: 'blob',
         sha: blobData.sha,

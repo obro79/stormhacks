@@ -28,6 +28,15 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
+// Sanitize file paths to prevent directory traversal attacks
+function sanitizePath(filePath: string): string {
+  const normalized = filePath.replace(/^\/+/, '').replace(/\.\.\//g, '');
+  if (normalized.startsWith('..') || normalized.includes('/../')) {
+    throw new Error(`Invalid file path: ${filePath}`);
+  }
+  return normalized;
+}
+
 async function waitForServer(url: string, onProgress?: (message: string) => void, maxRetries = 30): Promise<boolean> {
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -91,9 +100,9 @@ export async function createDaytonaSandbox(files: FileChange[], onProgress?: (me
     // Provide helpful error message
     if (message.includes('runner info')) {
       throw new Error(`Daytona runner not found. This usually means:
-1. Invalid DAYTONA_TARGET (current: ${process.env.DAYTONA_TARGET})
+1. Invalid DAYTONA_TARGET - check configuration
 2. No runner available in the specified target region
-3. API URL incorrect (current: ${process.env.DAYTONA_API_URL})
+3. API URL incorrect - check configuration
 
 Original error: ${message}`);
     }
@@ -101,112 +110,125 @@ Original error: ${message}`);
     throw error;
   }
 
-  // Get user root directory
-  const rootDir = await sandbox.getUserRootDir();
-  onProgress?.('Setting up project directory...');
+  try {
+    // Get user root directory
+    const rootDir = await sandbox.getUserRootDir();
+    onProgress?.('Setting up project directory...');
 
-  onProgress?.('Uploading files to sandbox...');
+    onProgress?.('Uploading files to sandbox...');
 
-  // Write all files to the sandbox using uploadFiles with full paths
-  await sandbox.fs.uploadFiles(
-    files.map(file => ({
-      source: Buffer.from(file.content),
-      destination: `${rootDir}/${file.path}`
-    }))
-  );
-  onProgress?.('Files uploaded');
+    // Write all files to the sandbox using uploadFiles with full paths
+    await sandbox.fs.uploadFiles(
+      files.map(file => ({
+        source: Buffer.from(file.content),
+        destination: `${rootDir}/${sanitizePath(file.path)}`
+      }))
+    );
+    onProgress?.('Files uploaded');
 
-  // Install dependencies
-  onProgress?.('Installing dependencies...');
+    // Install dependencies
+    onProgress?.('Installing dependencies...');
 
-  const installResult = await sandbox.process.executeCommand(
-    'npm install',
-    rootDir,
-    undefined,
-    300000 // 5 minute timeout
-  );
+    const installResult = await sandbox.process.executeCommand(
+      'npm install',
+      rootDir,
+      undefined,
+      300000 // 5 minute timeout
+    );
 
-  if (installResult.exitCode !== 0) {
-    console.error('npm install failed:', installResult.result);
-    throw new Error(`npm install failed: ${installResult.result}`);
-  }
-
-  onProgress?.('Dependencies installed');
-
-  // Start Next.js dev server on port 3000 using nohup (background process with logging)
-  onProgress?.('Starting Next.js dev server...');
-
-  await sandbox.process.executeCommand(
-    'nohup npm run dev > dev-server.log 2>&1 &',
-    rootDir,
-    { PORT: '3000' }
-  );
-
-  // Wait for server to initialize
-  onProgress?.('Waiting for server to start...');
-  await new Promise(resolve => setTimeout(resolve, 8000));
-
-  // Check if server is running on localhost
-  const healthCheck = await sandbox.process.executeCommand(
-    "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || echo 'failed'",
-    rootDir
-  );
-
-  if (healthCheck.result?.trim() === '200') {
-    onProgress?.('Server started successfully!');
-  } else {
-    onProgress?.('Checking server logs...');
-
-    // Read server logs for debugging
-    const logsResult = await sandbox.process.executeCommand('cat dev-server.log', rootDir);
-    const logs = logsResult.result || '';
-
-    // Check for SUCCESSFUL startup patterns FIRST
-    const serverReady = logs.includes('Ready in') ||
-                        logs.includes('started server on') ||
-                        logs.includes('Compiling');
-
-    if (serverReady) {
-      onProgress?.('Server is running!');
-      // Server is up - ignore non-critical errors like fonts/favicon
-    } else {
-      // Server didn't report ready - check if there are CRITICAL errors
-      const hasCriticalError =
-        logs.includes('EADDRINUSE') ||
-        logs.includes('MODULE_NOT_FOUND') ||
-        logs.includes('Cannot find module') ||
-        logs.includes('Failed to compile') ||
-        logs.includes('Error: listen');
-
-      if (hasCriticalError) {
-        // Extract the critical error
-        const errorLines = logs.split('\n').filter(line =>
-          line.includes('EADDRINUSE') ||
-          line.includes('MODULE_NOT_FOUND') ||
-          line.includes('Cannot find module') ||
-          line.includes('Failed to compile') ||
-          line.includes('Error: listen')
-        );
-        const errorMsg = errorLines[0] || 'Unknown critical error';
-        console.error('Critical server error:', errorMsg);
-        onProgress?.(`Critical error: ${errorMsg.substring(0, 100)}`);
-        throw new Error(`Server failed to start: ${errorMsg}`);
-      }
-
-      // No "Ready" message but no critical errors either - continue anyway
-      onProgress?.('Server status unclear, trying preview...');
+    if (installResult.exitCode !== 0) {
+      console.error('npm install failed:', installResult.result);
+      throw new Error(`npm install failed: ${installResult.result}`);
     }
+
+    onProgress?.('Dependencies installed');
+
+    // Start Next.js dev server on port 3000 using nohup (background process with logging)
+    onProgress?.('Starting Next.js dev server...');
+
+    await sandbox.process.executeCommand(
+      'nohup npm run dev > dev-server.log 2>&1 &',
+      rootDir,
+      { PORT: '3000' }
+    );
+
+    // Wait for server to initialize
+    onProgress?.('Waiting for server to start...');
+    await new Promise(resolve => setTimeout(resolve, 8000));
+
+    // Check if server is running on localhost
+    const healthCheck = await sandbox.process.executeCommand(
+      "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || echo 'failed'",
+      rootDir
+    );
+
+    if (healthCheck.result?.trim() === '200') {
+      onProgress?.('Server started successfully!');
+    } else {
+      onProgress?.('Checking server logs...');
+
+      // Read server logs for debugging
+      const logsResult = await sandbox.process.executeCommand('cat dev-server.log', rootDir);
+      const logs = logsResult.result || '';
+
+      // Check for SUCCESSFUL startup patterns FIRST
+      const serverReady = logs.includes('Ready in') ||
+                          logs.includes('started server on') ||
+                          logs.includes('Compiling');
+
+      if (serverReady) {
+        onProgress?.('Server is running!');
+        // Server is up - ignore non-critical errors like fonts/favicon
+      } else {
+        // Server didn't report ready - check if there are CRITICAL errors
+        const hasCriticalError =
+          logs.includes('EADDRINUSE') ||
+          logs.includes('MODULE_NOT_FOUND') ||
+          logs.includes('Cannot find module') ||
+          logs.includes('Failed to compile') ||
+          logs.includes('Error: listen');
+
+        if (hasCriticalError) {
+          // Extract the critical error
+          const errorLines = logs.split('\n').filter(line =>
+            line.includes('EADDRINUSE') ||
+            line.includes('MODULE_NOT_FOUND') ||
+            line.includes('Cannot find module') ||
+            line.includes('Failed to compile') ||
+            line.includes('Error: listen')
+          );
+          const errorMsg = errorLines[0] || 'Unknown critical error';
+          console.error('Critical server error:', errorMsg);
+          onProgress?.(`Critical error: ${errorMsg.substring(0, 100)}`);
+          throw new Error(`Server failed to start: ${errorMsg}`);
+        }
+
+        // No "Ready" message but no critical errors either - continue anyway
+        onProgress?.('Server status unclear, trying preview...');
+      }
+    }
+
+    // Get preview URL and wait for server to be ready
+    const previewLink = await sandbox.getPreviewLink(3000);
+    const serverReady = await waitForServer(previewLink.url, onProgress);
+
+    if (!serverReady) {
+      onProgress?.('Server taking longer than expected...');
+    }
+
+    return sandbox.id;
+  } catch (error) {
+    // Clean up sandbox on failure
+    if (sandbox) {
+      try {
+        await sandbox.delete();
+        console.log('Cleaned up sandbox after failure');
+      } catch (cleanupError) {
+        console.error('Failed to clean up sandbox:', cleanupError);
+      }
+    }
+    throw error;
   }
-
-  // Get preview URL and wait for server to be ready
-  const previewLink = await sandbox.getPreviewLink(3000);
-  const serverReady = await waitForServer(previewLink.url, onProgress);
-
-  if (!serverReady) {
-    onProgress?.('Server taking longer than expected...');
-  }
-
-  return sandbox.id;
 }
 
 export async function getSandboxUrl(sandboxId: string): Promise<string> {

@@ -6,10 +6,21 @@ import { storeFiles, filesStore } from '@/lib/filesStore';
 const progressStore = new Map<string, string[]>();
 
 export async function POST(request: NextRequest) {
-  const { prompt, sessionId } = await request.json();
+  let prompt: string, sessionId: string;
+  try {
+    const body = await request.json();
+    prompt = body.prompt;
+    sessionId = body.sessionId;
+  } catch {
+    return new Response('Invalid JSON body', { status: 400 });
+  }
 
   if (!prompt || !sessionId) {
     return new Response('Missing prompt or sessionId', { status: 400 });
+  }
+
+  if (!sessionId || !/^[a-zA-Z0-9_-]{1,64}$/.test(sessionId)) {
+    return new Response('Invalid sessionId format', { status: 400 });
   }
 
   // Initialize progress array for this session
@@ -62,9 +73,19 @@ export async function GET(request: NextRequest) {
     async start(controller) {
 
       let lastIndex = 0;
+      const startTime = Date.now();
+      const MAX_SESSION_TIME = 5 * 60 * 1000; // 5 minutes
 
       // Poll for new progress updates
       const interval = setInterval(() => {
+        // Check session timeout
+        if (Date.now() - startTime > MAX_SESSION_TIME) {
+          progressStore.delete(sessionId);
+          controller.close();
+          clearInterval(interval);
+          return;
+        }
+
         const messages = progressStore.get(sessionId) || [];
 
         // Send only new messages
@@ -89,6 +110,7 @@ export async function GET(request: NextRequest) {
       // Clean up on client disconnect
       request.signal.addEventListener('abort', () => {
         clearInterval(interval);
+        progressStore.delete(sessionId);
         controller.close();
       });
     }

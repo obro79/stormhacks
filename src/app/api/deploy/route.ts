@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
+import { exec, execFile } from "child_process";
 import { promisify } from "util";
 import {
   deploySandboxFiles,
@@ -9,11 +9,29 @@ import {
 import { filesStore } from '@/lib/filesStore';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+const SESSION_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { commitMessage, deployType = "github-vercel", sessionId, sandboxId, projectPrompt } = body;
+
+    // Input validation
+    if (sessionId && !SESSION_ID_PATTERN.test(sessionId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid session ID format' },
+        { status: 400 }
+      );
+    }
+
+    if (commitMessage && commitMessage.length > 500) {
+      return NextResponse.json(
+        { success: false, error: 'Commit message too long' },
+        { status: 400 }
+      );
+    }
 
     // If sessionId is provided, deploy the sandbox files
     if (sessionId) {
@@ -83,24 +101,49 @@ export async function POST(request: NextRequest) {
     }
 
     // Otherwise, deploy the main stormhacks codebase (original functionality)
-    let command = "";
     const message = commitMessage || `Deploy: ${new Date().toISOString()}`;
+    let stdout: string;
+    let stderr: string;
 
     // Determine which deployment command to run
     switch (deployType) {
       case "full":
         // Full deployment: commit, push, and deploy to Vercel
-        command = `bash ${process.cwd()}/scripts/deploy.sh "${message}"`;
+        // Use execFile with arguments array to prevent command injection
+        const result = await execFileAsync(
+          "bash",
+          [`${process.cwd()}/scripts/deploy.sh`, message],
+          {
+            cwd: process.cwd(),
+            maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large outputs
+          }
+        );
+        stdout = result.stdout;
+        stderr = result.stderr;
         break;
 
       case "quick":
         // Quick deployment: just commit and push
-        command = "npm run deploy:quick";
+        {
+          const quickResult = await execAsync("npm run deploy:quick", {
+            cwd: process.cwd(),
+            maxBuffer: 10 * 1024 * 1024,
+          });
+          stdout = quickResult.stdout;
+          stderr = quickResult.stderr;
+        }
         break;
 
       case "vercel":
         // Vercel only: deploy without git operations
-        command = "npm run deploy:vercel";
+        {
+          const vercelResult = await execAsync("npm run deploy:vercel", {
+            cwd: process.cwd(),
+            maxBuffer: 10 * 1024 * 1024,
+          });
+          stdout = vercelResult.stdout;
+          stderr = vercelResult.stderr;
+        }
         break;
 
       default:
@@ -109,12 +152,6 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
     }
-
-    // Execute the deployment command
-    const { stdout, stderr } = await execAsync(command, {
-      cwd: process.cwd(),
-      maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large outputs
-    });
 
     return NextResponse.json({
       success: true,

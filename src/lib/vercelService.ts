@@ -1,5 +1,15 @@
 const VERCEL_API = 'https://api.vercel.com';
 
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 30000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export interface VercelDeploymentResult {
   success: boolean;
   deploymentUrl?: string;
@@ -26,12 +36,19 @@ export async function deployToVercel(
     };
   }
 
+  if (!repoName || !/^[a-zA-Z0-9_-]+$/.test(repoName)) {
+    return { success: false, error: 'Invalid repository name' };
+  }
+  if (!username || !/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return { success: false, error: 'Invalid username' };
+  }
+
   try {
     console.log(`🚀 Deploying ${repoName} to Vercel...`);
 
     // Step 1: Create Vercel project linked to GitHub repo
     console.log(`📦 Creating Vercel project...`);
-    const createProjectResponse = await fetch(`${VERCEL_API}/v9/projects`, {
+    const createProjectResponse = await fetchWithTimeout(`${VERCEL_API}/v9/projects`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -65,7 +82,7 @@ export async function deployToVercel(
 
     // Step 2: Trigger deployment
     console.log(`🔄 Triggering deployment...`);
-    const deployResponse = await fetch(`${VERCEL_API}/v13/deployments`, {
+    const deployResponse = await fetchWithTimeout(`${VERCEL_API}/v13/deployments`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -105,7 +122,7 @@ export async function deployToVercel(
     while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
 
-      const statusResponse = await fetch(
+      const statusResponse = await fetchWithTimeout(
         `${VERCEL_API}/v13/deployments/${deploymentId}`,
         {
           headers: {
@@ -138,10 +155,11 @@ export async function deployToVercel(
       attempts++;
     }
 
-    // If we get here, deployment is taking too long but might still succeed
-    console.log(`⚠️  Deployment still in progress after 5 minutes`);
+    // If we get here, deployment is taking too long
+    console.log(`⚠️  Deployment timed out after 5 minutes`);
     return {
-      success: true,
+      success: false,
+      error: 'Deployment timed out after 5 minutes',
       deploymentUrl,
       projectId,
       deploymentId,
@@ -167,7 +185,7 @@ export async function getDeploymentStatus(
     throw new Error('VERCEL_TOKEN not configured');
   }
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${VERCEL_API}/v13/deployments/${deploymentId}`,
     {
       headers: {

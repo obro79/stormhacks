@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,21 @@ import { Mic, ArrowUp, ExternalLink, Download } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function BuilderPage() {
+function isValidSandboxUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === 'https:' &&
+      (parsed.hostname.endsWith('.daytona.io') ||
+       parsed.hostname === 'localhost' ||
+       parsed.hostname.endsWith('.vercel.app'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+function BuilderContent() {
   // Using dynamic route to avoid SSG issues with searchParams
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -74,7 +88,13 @@ export default function BuilderPage() {
       );
 
       eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+        let data;
+        try {
+          data = JSON.parse(event.data);
+        } catch {
+          console.error('Failed to parse SSE data');
+          return;
+        }
 
         // Add progress message
         setMessages((prev) => [
@@ -123,7 +143,7 @@ export default function BuilderPage() {
     }
 
     // If sandboxUrl provided directly (old flow)
-    if (url) {
+    if (url && isValidSandboxUrl(url)) {
       if (message) {
         newMessages.push({
           type: "assistant",
@@ -663,5 +683,13 @@ export default function BuilderPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BuilderPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+      <BuilderContent />
+    </Suspense>
   );
 }
