@@ -10,19 +10,6 @@ interface DaytonaConfig {
   target?: string;
 }
 
-// Type definitions for potential future use
-// interface DaytonaTask {
-//   id: string;
-//   name: string;
-//   args?: Record<string, unknown>;
-// }
-
-// interface DaytonaResult {
-//   stdout?: string;
-//   stderr?: string;
-//   code: number;
-// }
-
 // Type guard for safe type narrowing
 function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);

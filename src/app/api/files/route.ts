@@ -4,9 +4,9 @@ import { filesStore } from '@/lib/filesStore';
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId');
 
-  if (!sessionId) {
+  if (!sessionId || !/^[a-zA-Z0-9_-]{1,64}$/.test(sessionId)) {
     return NextResponse.json(
-      { success: false, error: 'Session ID is required' },
+      { success: false, error: 'Invalid sessionId format' },
       { status: 400 }
     );
   }

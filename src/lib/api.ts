@@ -32,7 +32,7 @@ export async function callClaude(
       system: systemPrompt,
       messages: messages.map(msg => ({
         role: msg.role,
-        content: typeof msg.content === 'string' ? msg.content : msg.content,
+        content: msg.content,
       })),
     }),
   });

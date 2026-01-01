@@ -12,7 +12,6 @@ import Image from "next/image";
 
 export default function Home() {
   const router = useRouter();
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,15 +29,13 @@ export default function Home() {
       .replace(/[<>]/g, ""); // avoid stray HTML paste chars
     const cleanPassword = password.trim();
 
-    console.log("Email being sent to Supabase:", cleanEmail);
-
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       setMessage("Please enter a valid email address.");
       setLoading(false);
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: cleanEmail,
       password: cleanPassword,
     });
@@ -50,7 +47,6 @@ export default function Home() {
       return;
     }
 
-    console.log("Signup success:", data);
     setMessage("Signup successful! Redirecting...");
     setLoading(false);
 
@@ -90,21 +86,6 @@ export default function Home() {
 
       <div className="w-full max-w-md bg-neutral-800 rounded p-6">
         <div className="space-y-4">
-          {/* Name Field */}
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-white text-base">
-              Name <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="name"
-              type="name"
-              placeholder="John Doe"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500 h-12 rounded"
-            />
-          </div>
-
           {/* Email Field */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white text-base">

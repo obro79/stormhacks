@@ -16,7 +16,7 @@ const SESSION_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { commitMessage, deployType = "github-vercel", sessionId, sandboxId, projectPrompt } = body;
+    const { commitMessage, deployType = "github-vercel", sessionId, projectPrompt } = body;
 
     // Input validation
     if (sessionId && !SESSION_ID_PATTERN.test(sessionId)) {

@@ -101,11 +101,6 @@ node_modules/
     console.log(`💾 Committing changes...`);
     await execAsync('git add .', { cwd: deployDir });
 
-    // Validate sessionId format before using in shell command to prevent command injection
-    if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
-      throw new Error('Invalid session ID format');
-    }
-
     try {
       await execAsync(
         `git commit -m "Deploy sandbox ${sessionId}: ${new Date().toISOString()}"`,

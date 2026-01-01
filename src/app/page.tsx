@@ -13,11 +13,6 @@ export default function Home() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [prompt, setPrompt] = useState("");
-  const [result] = useState<{
-    success: boolean;
-    message?: string;
-    sandboxUrl?: string;
-  } | null>(null);
 
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -230,12 +225,6 @@ export default function Home() {
             Build applications by talking
           </h2>
 
-          {/* <div className="mx-auto text-white text-2xl text-align font-medium tracking-tight leading-none">
-            <p>Describe what you want</p>
-            <p>Watch it come to life</p>
-            <p>No typing required</p>
-          </div> */}
-
           {/* Input Area */}
           <div className="flex justify-center">
             <div
@@ -313,34 +302,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Result Display */}
-          {result && (
-            <div
-              className={`rounded-lg p-6 mt-6 ${
-                result.success
-                  ? "bg-green-900/20 border border-green-700"
-                  : "bg-red-900/20 border border-red-700"
-              }`}
-            >
-              <p
-                className={`font-medium ${
-                  result.success ? "text-green-400" : "text-red-400"
-                }`}
-              >
-                {result.message}
-              </p>
-              {result.sandboxUrl && (
-                <a
-                  href={result.sandboxUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-2 text-blue-400 hover:underline font-medium"
-                >
-                  Open Preview →
-                </a>
-              )}
-            </div>
-          )}
         </div>
       </main>
 

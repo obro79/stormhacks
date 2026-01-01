@@ -36,7 +36,7 @@ export default function Home() {
     }
 
     // Sign in with Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password: cleanPassword,
     });
@@ -48,7 +48,6 @@ export default function Home() {
       return;
     }
 
-    console.log("Signed in:", data);
     setMessage("Successfully signed in!");
     setLoading(false);
 
