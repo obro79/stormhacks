@@ -12,8 +12,6 @@ export async function POST(request: NextRequest) {
     return new Response('Missing prompt or sessionId', { status: 400 });
   }
 
-  console.log(`📨 Starting build for session: ${sessionId}`);
-
   // Initialize progress array for this session
   progressStore.set(sessionId, []);
 
@@ -21,32 +19,29 @@ export async function POST(request: NextRequest) {
     const messages = progressStore.get(sessionId) || [];
     messages.push(message);
     progressStore.set(sessionId, messages);
-    console.log(`📊 Progress [${sessionId}]: ${message}`);
   };
 
   // Start build process
   (async () => {
     try {
-      addProgress('🧠 Calling Claude to generate code...');
+      addProgress('Calling Claude to generate code...');
       const result = await buildApp(prompt, addProgress);
 
-      // ✅ Store files IMMEDIATELY after generation (before checking success)
+      // Store files IMMEDIATELY after generation (before checking success)
       if (result.files && result.files.length > 0) {
-        console.log(`📦 Storing ${result.files.length} files for session: ${sessionId}`);
         storeFiles(sessionId, result.files);
-        console.log(`✅ Files stored. Available sessions:`, Array.from(filesStore.keys()));
       }
 
       if (result.success && result.sandboxUrl) {
-        addProgress(`✅ Preview ready! ${result.sandboxUrl}`);
+        addProgress(`Preview ready! ${result.sandboxUrl}`);
         addProgress(`COMPLETE:${result.sandboxUrl}`);
       } else {
-        addProgress(`❌ ${result.message}`);
+        addProgress(`${result.message}`);
         addProgress(`ERROR:${result.message}`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      addProgress(`❌ Error: ${errorMsg}`);
+      addProgress(`Error: ${errorMsg}`);
       addProgress(`ERROR:${errorMsg}`);
     }
   })();
@@ -65,7 +60,6 @@ export async function GET(request: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      console.log(`📡 Client connected to stream: ${sessionId}`);
 
       let lastIndex = 0;
 
@@ -94,7 +88,6 @@ export async function GET(request: NextRequest) {
 
       // Clean up on client disconnect
       request.signal.addEventListener('abort', () => {
-        console.log(`🔌 Client disconnected: ${sessionId}`);
         clearInterval(interval);
         controller.close();
       });

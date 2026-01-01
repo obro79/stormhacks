@@ -15,23 +15,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { commitMessage, deployType = "github-vercel", sessionId, sandboxId, projectPrompt } = body;
 
-    console.log("🚀 Starting deployment...", {
-      commitMessage,
-      deployType,
-      sessionId,
-      sandboxId,
-      projectPrompt,
-      isSandboxDeploy: !!sessionId
-    });
-
     // If sessionId is provided, deploy the sandbox files
     if (sessionId) {
       // Get files from store
       const files = filesStore.get(sessionId);
 
       if (!files || files.length === 0) {
-        console.error(`❌ No files found for session ${sessionId}`);
-        console.log('Available sessions:', Array.from(filesStore.keys()));
+        console.error(`No files found for session ${sessionId}`);
         return NextResponse.json(
           {
             success: false,
@@ -41,12 +31,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log(`📁 Found ${files.length} files for session ${sessionId}`);
-
       // Choose deployment strategy based on deployType
       if (deployType === "github-vercel") {
-        // NEW: Deploy to GitHub + Vercel (one-click)
-        console.log("📦 Deploying to GitHub + Vercel...");
+        // Deploy to GitHub + Vercel (one-click)
         const result = await deployToGitHubAndVercel(files, sessionId, projectPrompt);
 
         if (result.success) {
@@ -70,8 +57,7 @@ export async function POST(request: NextRequest) {
           );
         }
       } else {
-        // OLD: Legacy Vercel-only deployment
-        console.log("📦 Deploying sandbox files (legacy mode)...");
+        // Legacy Vercel-only deployment
         const result = await deploySandboxFiles(files, sessionId);
 
         // Clean up old deployments (keep last 5)
@@ -124,17 +110,11 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    console.log("📝 Running command:", command);
-
     // Execute the deployment command
     const { stdout, stderr } = await execAsync(command, {
       cwd: process.cwd(),
       maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large outputs
     });
-
-    console.log("✅ Deployment completed");
-    console.log("stdout:", stdout);
-    if (stderr) console.log("stderr:", stderr);
 
     return NextResponse.json({
       success: true,
@@ -143,7 +123,7 @@ export async function POST(request: NextRequest) {
       deployType,
     });
   } catch (error: unknown) {
-    console.error("❌ Deployment failed:", error);
+    console.error("Deployment failed:", error);
 
     const errorObj = error as { message?: string; stdout?: string; stderr?: string };
     return NextResponse.json(
@@ -176,7 +156,7 @@ export async function GET() {
       },
     });
   } catch (error: unknown) {
-    console.error("❌ Error checking status:", error);
+    console.error("Error checking status:", error);
     return NextResponse.json(
       {
         success: false,

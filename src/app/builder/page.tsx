@@ -69,15 +69,12 @@ export default function BuilderPage() {
 
     // If building, start listening to SSE
     if (status === "building" && sessionIdParam) {
-      console.log("🔄 Starting to listen for build updates...");
-
       const eventSource = new EventSource(
         `/api/build-stream?sessionId=${sessionIdParam}`
       );
 
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("📨 SSE message:", data.message);
 
         // Add progress message
         setMessages((prev) => [
@@ -114,7 +111,7 @@ export default function BuilderPage() {
       };
 
       eventSource.onerror = () => {
-        console.error("❌ SSE connection error");
+        console.error("SSE connection error");
         eventSource.close();
       };
 
@@ -148,7 +145,6 @@ export default function BuilderPage() {
         .finally(() => {
           setSandboxUrl(url);
           setIframeLoading(true);
-          console.log("🔗 Loading preview:", url);
         });
     }
 
@@ -257,8 +253,6 @@ export default function BuilderPage() {
     setGithubUrl(null);
 
     try {
-      console.log("🚀 Starting GitHub + Vercel deployment...", { sessionId, projectPrompt });
-
       const response = await fetch("/api/deploy", {
         method: "POST",
         headers: {
@@ -275,8 +269,6 @@ export default function BuilderPage() {
       const data = await response.json();
 
       if (data.success) {
-        console.log("✅ Deployment successful!", data);
-
         // Store GitHub URL
         if (data.githubUrl) {
           setGithubUrl(data.githubUrl);
@@ -298,7 +290,7 @@ export default function BuilderPage() {
         // Clear success message after 10 seconds
         setTimeout(() => setDeployMessage(null), 10000);
       } else {
-        console.error("❌ Deployment failed:", data.error);
+        console.error("Deployment failed:", data.error);
 
         // Store GitHub URL even if Vercel failed
         if (data.githubUrl) {
@@ -309,8 +301,8 @@ export default function BuilderPage() {
         }
       }
     } catch (error) {
-      console.error("❌ Deployment error:", error);
-      setDeployMessage("❌ Deployment failed. Check console for details.");
+      console.error("Deployment error:", error);
+      setDeployMessage("Deployment failed. Check console for details.");
     } finally {
       setIsDeploying(false);
     }
@@ -320,7 +312,6 @@ export default function BuilderPage() {
     if (!chatInput.trim() || isThinking) return;
 
     const userMessage = chatInput;
-    console.log("💬 Sending message:", userMessage);
 
     // Add user message to chat immediately
     setMessages((prev) => [
@@ -368,7 +359,7 @@ export default function BuilderPage() {
         ]);
       }
     } catch (error) {
-      console.error("❌ Chat error:", error);
+      console.error("Chat error:", error);
       setMessages((prev) => [
         ...prev,
         {
@@ -589,15 +580,12 @@ export default function BuilderPage() {
                       className="w-full h-full"
                       sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-top-navigation-by-user-activation allow-popups-to-escape-sandbox allow-top-navigation allow-presentation allow-storage-access-by-user-activation allow-orientation-lock"
                       allow="accelerometer; camera; encrypted-media; geolocation; microphone; display-capture"
-                      onClick={() => console.log("🖱️ Iframe area clicked")}
                       onLoad={() => {
                         setIframeLoading(false);
-                        console.log("✅ Preview loaded successfully");
-                        console.log("🔍 Iframe src:", sandboxUrl);
                       }}
                       onError={() => {
                         setIframeLoading(false);
-                        console.error("❌ Failed to load preview");
+                        console.error("Failed to load preview");
                       }}
                     />
                   </>

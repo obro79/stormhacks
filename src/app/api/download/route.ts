@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     if (!sessionId) {
       return NextResponse.json(
-        { success: false, message: 'Session ID is required' },
+        { success: false, error: 'Session ID is required' },
         { status: 400 }
       );
     }
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     
     if (!files || files.length === 0) {
       return NextResponse.json(
-        { success: false, message: 'No files found for this session' },
+        { success: false, error: 'No files found for this session' },
         { status: 404 }
       );
     }
@@ -45,11 +45,11 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error creating ZIP file:', error);
+    console.error('Error creating ZIP file:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to create ZIP file',
+        error: error instanceof Error ? error.message : 'Failed to create ZIP file',
       },
       { status: 500 }
     );
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
   if (!sessionId) {
     return NextResponse.json(
-      { success: false, message: 'Session ID is required' },
+      { success: false, error: 'Session ID is required' },
       { status: 400 }
     );
   }
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   
   if (!files || files.length === 0) {
     return NextResponse.json(
-      { success: false, message: 'No files found for this session' },
+      { success: false, error: 'No files found for this session' },
       { status: 404 }
     );
   }
@@ -99,11 +99,11 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error creating ZIP file:', error);
+    console.error('Error creating ZIP file:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to create ZIP file',
+        error: error instanceof Error ? error.message : 'Failed to create ZIP file',
       },
       { status: 500 }
     );

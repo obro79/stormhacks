@@ -3,8 +3,6 @@ import { deleteAllSandboxes } from '@/lib/daytona';
 
 export async function GET() {
   try {
-    console.log('🧹 Cleanup API endpoint called');
-
     const result = await deleteAllSandboxes();
 
     return NextResponse.json({
@@ -14,11 +12,11 @@ export async function GET() {
       sandboxIds: result.ids
     });
   } catch (error) {
-    console.error('❌ Error in cleanup API:', error);
+    console.error('Error in cleanup API:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to cleanup sandboxes',
+        error: error instanceof Error ? error.message : 'Failed to cleanup sandboxes',
       },
       { status: 500 }
     );

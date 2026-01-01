@@ -13,9 +13,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('💬 Chat message received:', message);
-    console.log('📦 Sandbox ID:', sandboxId || 'none');
-
     // Create system prompt
     const systemPrompt = sandboxId
       ? `You are a helpful AI assistant helping users build web applications.
@@ -33,21 +30,19 @@ Provide clear, concise, and helpful responses.`;
       },
     ];
 
-    console.log('🧠 Calling Claude API for chat response...');
     const response = await callClaude(messages, systemPrompt, {
       maxTokens: 2000,
       temperature: 1,
     });
 
     const text = extractTextFromResponse(response);
-    console.log('✅ Claude chat response received');
 
     return NextResponse.json({
       success: true,
       response: text,
     });
   } catch (error) {
-    console.error('❌ Error in chat API:', error);
+    console.error('Error in chat API:', error);
     return NextResponse.json(
       {
         success: false,

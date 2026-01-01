@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
 
   if (!sessionId) {
     return NextResponse.json(
-      { success: false, message: 'Session ID is required' },
+      { success: false, error: 'Session ID is required' },
       { status: 400 }
     );
   }
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   if (!files || files.length === 0) {
     return NextResponse.json(
-      { success: false, message: 'No files found for this session' },
+      { success: false, error: 'No files found for this session' },
       { status: 404 }
     );
   }

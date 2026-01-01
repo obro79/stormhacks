@@ -28,14 +28,10 @@ export default function Home() {
   const handleSubmit = async () => {
     if (!prompt.trim()) return;
 
-    console.log("🚀 Submit button clicked!");
-    console.log("📝 Prompt:", prompt);
-
     // Generate a unique session ID for this build
     const sessionId = `build-${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 9)}`;
-    console.log("🆔 Session ID:", sessionId);
 
     // Immediately redirect to builder page
     const params = new URLSearchParams({
@@ -53,7 +49,7 @@ export default function Home() {
       },
       body: JSON.stringify({ prompt, sessionId }),
     }).catch((error) => {
-      console.error("❌ Error starting build:", error);
+      console.error("Error starting build:", error);
     });
   };
 

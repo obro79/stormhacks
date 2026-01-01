@@ -16,7 +16,7 @@ export interface GitHubRepoResult {
 export async function createGitHubRepo(
   files: FileChange[],
   projectName: string,
-  username: string = process.env.GITHUB_USERNAME || 'owenfisher47'
+  username: string = process.env.GITHUB_USERNAME || ''
 ): Promise<GitHubRepoResult> {
   const token = process.env.GITHUB_TOKEN;
 

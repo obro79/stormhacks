@@ -15,7 +15,7 @@ export interface VercelDeploymentResult {
 export async function deployToVercel(
   repoUrl: string,
   repoName: string,
-  username: string = process.env.GITHUB_USERNAME || 'owenfisher47'
+  username: string = process.env.GITHUB_USERNAME || ''
 ): Promise<VercelDeploymentResult> {
   const token = process.env.VERCEL_TOKEN;
 

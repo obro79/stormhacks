@@ -29,8 +29,6 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 async function waitForServer(url: string, onProgress?: (message: string) => void, maxRetries = 30): Promise<boolean> {
-  console.log('⏳ Waiting for server to be ready...');
-
   for (let i = 0; i < maxRetries; i++) {
     try {
       const response = await fetch(url, {
@@ -40,15 +38,13 @@ async function waitForServer(url: string, onProgress?: (message: string) => void
 
       if (response.ok || response.status === 404) {
         // 404 is ok - means server is running, just no route
-        console.log(`✅ Server is ready! (attempt ${i + 1}/${maxRetries})`);
         return true;
       }
     } catch {
       // Expected to fail while server is starting
-      console.log(`⏳ Server not ready yet (attempt ${i + 1}/${maxRetries})...`);
       if (i % 5 === 0 && i > 0) {
         // Update progress every 10 seconds (5 attempts * 2 seconds)
-        onProgress?.(`⏳ Still waiting for server... (${i * 2}s)`);
+        onProgress?.(`Still waiting for server... (${i * 2}s)`);
       }
     }
 
@@ -56,17 +52,11 @@ async function waitForServer(url: string, onProgress?: (message: string) => void
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
-  console.error('❌ Server failed to start within timeout period');
+  console.error('Server failed to start within timeout period');
   return false;
 }
 
 export async function createDaytonaSandbox(files: FileChange[], onProgress?: (message: string) => void): Promise<string> {
-  // Validate and log configuration
-  console.log('📋 Daytona Configuration Check:');
-  console.log('  - API Key:', DAYTONA_API_KEY ? `${DAYTONA_API_KEY.substring(0, 10)}...` : '❌ MISSING');
-  console.log('  - API URL:', process.env.DAYTONA_API_URL || '⚠️ Not set (will use SDK default: https://app.daytona.io/api)');
-  console.log('  - Target:', process.env.DAYTONA_TARGET || '⚠️ Not set (SDK will determine from API)');
-
   if (!DAYTONA_API_KEY) {
     throw new Error('DAYTONA_API_KEY environment variable is required');
   }
@@ -86,45 +76,26 @@ export async function createDaytonaSandbox(files: FileChange[], onProgress?: (me
 
   const daytona = new Daytona(daytonaConfig);
 
-  console.log('✅ Daytona SDK initialized successfully');
-
   // Create a new sandbox
   let sandbox;
   try {
-    console.log('🔄 Creating Daytona sandbox...');
-    onProgress?.('🔄 Creating sandbox...');
+    onProgress?.('Creating sandbox...');
     sandbox = await daytona.create({
       public: true,
       image: 'node:20'
     });
-    console.log('✅ Sandbox created successfully:', sandbox.id);
   } catch (error: unknown) {
-    console.error('❌ Failed to create Daytona sandbox');
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to create Daytona sandbox:', message);
 
-    if (error instanceof Error && isRecord(error)) {
-      const errorRecord = error as Record<string, unknown>;
-      const response = isRecord(errorRecord.response) ? errorRecord.response : {};
-
-      console.error('Error details:', {
-        message: error.message,
-        statusCode: errorRecord.statusCode || (isRecord(response) && response.status) || undefined,
-        errorCode: errorRecord.code,
-        timestamp: errorRecord.timestamp,
-        path: errorRecord.path,
-        method: errorRecord.method,
-        responseData: isRecord(response) && response.data,
-        fullError: JSON.stringify(error, null, 2)
-      });
-
-      // Provide helpful error message
-      if (error.message?.includes('runner info')) {
-        throw new Error(`Daytona runner not found. This usually means:
+    // Provide helpful error message
+    if (message.includes('runner info')) {
+      throw new Error(`Daytona runner not found. This usually means:
 1. Invalid DAYTONA_TARGET (current: ${process.env.DAYTONA_TARGET})
 2. No runner available in the specified target region
 3. API URL incorrect (current: ${process.env.DAYTONA_API_URL})
 
-Original error: ${error.message}`);
-      }
+Original error: ${message}`);
     }
 
     throw error;
@@ -132,11 +103,9 @@ Original error: ${error.message}`);
 
   // Get user root directory
   const rootDir = await sandbox.getUserRootDir();
-  console.log('📂 Root directory:', rootDir);
-  onProgress?.('📂 Setting up project directory...');
+  onProgress?.('Setting up project directory...');
 
-  console.log('📁 Uploading files to sandbox...');
-  onProgress?.('📁 Uploading files to sandbox...');
+  onProgress?.('Uploading files to sandbox...');
 
   // Write all files to the sandbox using uploadFiles with full paths
   await sandbox.fs.uploadFiles(
@@ -145,24 +114,10 @@ Original error: ${error.message}`);
       destination: `${rootDir}/${file.path}`
     }))
   );
-  console.log('✅ Files uploaded');
-  onProgress?.('✅ Files uploaded');
-
-  // Verify files were uploaded
-  console.log('🔍 Verifying uploaded files...');
-  const lsResult = await sandbox.process.executeCommand('ls -la', rootDir);
-  console.log('📋 Files in directory:', lsResult.result);
-
-  // Check if package.json exists
-  const pkgCheck = await sandbox.process.executeCommand(
-    'test -f package.json && echo "found" || echo "missing"',
-    rootDir
-  );
-  console.log('📦 Package.json check:', pkgCheck.result?.trim());
+  onProgress?.('Files uploaded');
 
   // Install dependencies
-  console.log('📦 Installing npm dependencies...');
-  onProgress?.('📦 Installing dependencies...');
+  onProgress?.('Installing dependencies...');
 
   const installResult = await sandbox.process.executeCommand(
     'npm install',
@@ -172,62 +127,50 @@ Original error: ${error.message}`);
   );
 
   if (installResult.exitCode !== 0) {
-    console.error('❌ npm install failed:', installResult.result);
+    console.error('npm install failed:', installResult.result);
     throw new Error(`npm install failed: ${installResult.result}`);
   }
 
-  console.log('✅ Dependencies installed');
-  onProgress?.('✅ Dependencies installed');
+  onProgress?.('Dependencies installed');
 
   // Start Next.js dev server on port 3000 using nohup (background process with logging)
-  console.log('🚀 Starting Next.js dev server...');
-  onProgress?.('🚀 Starting Next.js dev server...');
+  onProgress?.('Starting Next.js dev server...');
 
   await sandbox.process.executeCommand(
     'nohup npm run dev > dev-server.log 2>&1 &',
     rootDir,
     { PORT: '3000' }
   );
-  console.log('✅ Server command sent');
 
   // Wait for server to initialize
-  console.log('⏳ Waiting for server to start (8 seconds)...');
-  onProgress?.('⏳ Waiting for server to start...');
+  onProgress?.('Waiting for server to start...');
   await new Promise(resolve => setTimeout(resolve, 8000));
 
   // Check if server is running on localhost
-  console.log('📝 Checking server health...');
   const healthCheck = await sandbox.process.executeCommand(
     "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || echo 'failed'",
     rootDir
   );
 
   if (healthCheck.result?.trim() === '200') {
-    console.log('✅ Server is running!');
-    onProgress?.('✅ Server started successfully!');
+    onProgress?.('Server started successfully!');
   } else {
-    console.log('⚠️ Server might still be starting, checking logs...');
-    onProgress?.('⚠️ Checking server logs...');
+    onProgress?.('Checking server logs...');
 
     // Read server logs for debugging
     const logsResult = await sandbox.process.executeCommand('cat dev-server.log', rootDir);
     const logs = logsResult.result || '';
-    console.log('📋 Server logs:', logs);
 
     // Check for SUCCESSFUL startup patterns FIRST
-    const serverReady = logs.includes('✓ Ready in') ||
-                        logs.includes('Ready in') ||
+    const serverReady = logs.includes('Ready in') ||
                         logs.includes('started server on') ||
-                        logs.includes('○ Compiling');
+                        logs.includes('Compiling');
 
     if (serverReady) {
-      console.log('✅ Server started successfully! (found "Ready" message)');
-      onProgress?.('✅ Server is running!');
+      onProgress?.('Server is running!');
       // Server is up - ignore non-critical errors like fonts/favicon
     } else {
       // Server didn't report ready - check if there are CRITICAL errors
-      console.warn('⚠️ No "Ready" message found, checking for critical errors...');
-
       const hasCriticalError =
         logs.includes('EADDRINUSE') ||
         logs.includes('MODULE_NOT_FOUND') ||
@@ -245,14 +188,13 @@ Original error: ${error.message}`);
           line.includes('Error: listen')
         );
         const errorMsg = errorLines[0] || 'Unknown critical error';
-        console.error('❌ Critical server error:', errorMsg);
-        onProgress?.(`❌ Critical error: ${errorMsg.substring(0, 100)}`);
+        console.error('Critical server error:', errorMsg);
+        onProgress?.(`Critical error: ${errorMsg.substring(0, 100)}`);
         throw new Error(`Server failed to start: ${errorMsg}`);
       }
 
       // No "Ready" message but no critical errors either - continue anyway
-      console.warn('⚠️ Server status unclear (no "Ready" or critical errors), will try preview...');
-      onProgress?.('⚠️ Server status unclear, trying preview...');
+      onProgress?.('Server status unclear, trying preview...');
     }
   }
 
@@ -261,8 +203,7 @@ Original error: ${error.message}`);
   const serverReady = await waitForServer(previewLink.url, onProgress);
 
   if (!serverReady) {
-    console.warn('⚠️ Server may not be fully ready, but continuing anyway...');
-    onProgress?.('⚠️ Server taking longer than expected...');
+    onProgress?.('Server taking longer than expected...');
   }
 
   return sandbox.id;
@@ -303,7 +244,6 @@ export async function listAllSandboxes(): Promise<string[]> {
   const daytona = new Daytona({ apiKey: DAYTONA_API_KEY });
 
   const response = await daytona.list();
-  console.log('📋 List response:', response);
 
   // Handle different response formats
   const sandboxes = Array.isArray(response)
@@ -322,37 +262,29 @@ export async function deleteAllSandboxes(): Promise<{ deleted: number; ids: stri
     throw new Error('DAYTONA_API_KEY environment variable is required');
   }
 
-  console.log('🧹 Starting cleanup of all Daytona sandboxes...');
-
   const daytona = new Daytona({ apiKey: DAYTONA_API_KEY });
   const response = await daytona.list();
-  console.log('📋 List response:', response);
 
   // Handle different response formats
   const sandboxes = Array.isArray(response)
     ? response
     : (isRecord(response) && Array.isArray(response.sandboxes) ? response.sandboxes : []);
 
-  console.log(`📊 Found ${sandboxes.length} sandbox(es) to delete`);
-
   const deletedIds: string[] = [];
 
   for (const sandbox of sandboxes) {
     try {
       if (isRecord(sandbox) && typeof sandbox.id === 'string') {
-        console.log(`🗑️  Deleting sandbox: ${sandbox.id}`);
         if (typeof (sandbox as { delete?: () => Promise<void> }).delete === 'function') {
           await (sandbox as { delete: () => Promise<void> }).delete();
         }
         deletedIds.push(sandbox.id);
-        console.log(`✅ Deleted: ${sandbox.id}`);
       }
-    } catch (error) {
-      console.error(`❌ Failed to delete sandbox:`, error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to delete sandbox:', message);
     }
   }
-
-  console.log(`✅ Cleanup complete! Deleted ${deletedIds.length} sandbox(es)`);
 
   return {
     deleted: deletedIds.length,
