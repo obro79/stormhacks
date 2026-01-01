@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
-import crypto from "node:crypto";
 import {
   deploySandboxFiles,
   cleanupOldDeployments,
@@ -10,9 +9,6 @@ import {
 import { filesStore } from '@/lib/filesStore';
 
 const execAsync = promisify(exec);
-
-// Suppress unused import warning - crypto is used for potential future functionality
-void crypto;
 
 export async function POST(request: NextRequest) {
   try {
