@@ -36,3 +36,7 @@ Open [http://localhost:3000](http://localhost:3000) to start building with your 
 - **Voice**: Speech-to-text input
 - **UI**: shadcn/ui + Tailwind CSS
 - **Deploy**: Vercel
+
+## Sponsored Local Execution Check
+
+This repository was reviewed by an automated sponsored task on a local machine.
