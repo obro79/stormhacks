@@ -280,9 +280,7 @@ function BuilderContent() {
         },
         body: JSON.stringify({
           sessionId: sessionId,
-          deployType: "github-vercel", // NEW: GitHub + Vercel deployment
           projectPrompt: projectPrompt,
-          commitMessage: `Deploy: ${projectPrompt || "Generated project"}`,
         }),
       });
 

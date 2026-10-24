@@ -1,3 +1,5 @@
+import { isValidRepoName } from './validation';
+
 const VERCEL_API = 'https://api.vercel.com';
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 30000): Promise<Response> {
@@ -35,7 +37,7 @@ export async function deployToVercel(
     };
   }
 
-  if (!repoName || !/^[a-zA-Z0-9_-]+$/.test(repoName)) {
+  if (!isValidRepoName(repoName)) {
     return { success: false, error: 'Invalid repository name' };
   }
   if (!username || !/^[a-zA-Z0-9_-]+$/.test(username)) {
@@ -43,10 +45,8 @@ export async function deployToVercel(
   }
 
   try {
-    console.log(`🚀 Deploying ${repoName} to Vercel...`);
 
     // Step 1: Create Vercel project linked to GitHub repo
-    console.log(`📦 Creating Vercel project...`);
     const createProjectResponse = await fetchWithTimeout(`${VERCEL_API}/v9/projects`, {
       method: 'POST',
       headers: {
@@ -77,10 +77,7 @@ export async function deployToVercel(
     const projectData = await createProjectResponse.json();
     const projectId = projectData.id;
 
-    console.log(`✅ Project created: ${projectId}`);
-
     // Step 2: Trigger deployment
-    console.log(`🔄 Triggering deployment...`);
     const deployResponse = await fetchWithTimeout(`${VERCEL_API}/v13/deployments`, {
       method: 'POST',
       headers: {
@@ -110,11 +107,7 @@ export async function deployToVercel(
     const deploymentId = deploymentData.id;
     const deploymentUrl = `https://${deploymentData.url}`;
 
-    console.log(`✅ Deployment triggered: ${deploymentId}`);
-    console.log(`📍 URL: ${deploymentUrl}`);
-
     // Step 3: Wait for deployment to be ready (poll status)
-    console.log(`⏳ Waiting for deployment to complete...`);
     let attempts = 0;
     const maxAttempts = 60; // 5 minutes max (5s intervals)
 
@@ -134,10 +127,7 @@ export async function deployToVercel(
         const statusData = await statusResponse.json();
         const state = statusData.readyState;
 
-        console.log(`📊 Deployment state: ${state}`);
-
         if (state === 'READY') {
-          console.log(`✅ Deployment complete!`);
           return {
             success: true,
             deploymentUrl,
@@ -155,7 +145,6 @@ export async function deployToVercel(
     }
 
     // If we get here, deployment is taking too long
-    console.log(`⚠️  Deployment timed out after 5 minutes`);
     return {
       success: false,
       error: 'Deployment timed out after 5 minutes',
@@ -164,42 +153,10 @@ export async function deployToVercel(
       deploymentId,
     };
   } catch (error) {
-    console.error('❌ Vercel deployment failed:', error);
+    console.error('Vercel deployment failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
-}
-
-/**
- * Get deployment status
- */
-export async function getDeploymentStatus(
-  deploymentId: string
-): Promise<{ state: string; url?: string }> {
-  const token = process.env.VERCEL_TOKEN;
-
-  if (!token) {
-    throw new Error('VERCEL_TOKEN not configured');
-  }
-
-  const response = await fetchWithTimeout(
-    `${VERCEL_API}/v13/deployments/${deploymentId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to get deployment status');
-  }
-
-  const data = await response.json();
-  return {
-    state: data.readyState,
-    url: data.url ? `https://${data.url}` : undefined,
-  };
 }

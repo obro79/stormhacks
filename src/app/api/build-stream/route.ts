@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { buildApp } from '@/lib/orchestrator';
 import { storeFiles } from '@/lib/filesStore';
+import { isValidSessionId } from '@/lib/validation';
+import { COMPLETE_PREFIX, ERROR_PREFIX, formatSseEvent, isTerminalMessage } from '@/lib/progress';
 
 // Store for progress updates
 const progressStore = new Map<string, string[]>();
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest) {
     return new Response('Missing prompt or sessionId', { status: 400 });
   }
 
-  if (!sessionId || !/^[a-zA-Z0-9_-]{1,64}$/.test(sessionId)) {
+  if (!isValidSessionId(sessionId)) {
     return new Response('Invalid sessionId format', { status: 400 });
   }
 
@@ -45,15 +47,15 @@ export async function POST(request: NextRequest) {
 
       if (result.success && result.sandboxUrl) {
         addProgress(`Preview ready! ${result.sandboxUrl}`);
-        addProgress(`COMPLETE:${result.sandboxUrl}`);
+        addProgress(`${COMPLETE_PREFIX}${result.sandboxUrl}`);
       } else {
         addProgress(`${result.message}`);
-        addProgress(`ERROR:${result.message}`);
+        addProgress(`${ERROR_PREFIX}${result.message}`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       addProgress(`Error: ${errorMsg}`);
-      addProgress(`ERROR:${errorMsg}`);
+      addProgress(`${ERROR_PREFIX}${errorMsg}`);
     }
   })();
 
@@ -63,8 +65,8 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId');
 
-  if (!sessionId) {
-    return new Response('Missing sessionId', { status: 400 });
+  if (!isValidSessionId(sessionId)) {
+    return new Response('Invalid sessionId format', { status: 400 });
   }
 
   const encoder = new TextEncoder();
@@ -92,10 +94,10 @@ export async function GET(request: NextRequest) {
         if (messages.length > lastIndex) {
           for (let i = lastIndex; i < messages.length; i++) {
             const message = messages[i];
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ message })}\n\n`));
+            controller.enqueue(encoder.encode(formatSseEvent(message)));
 
             // Check if complete or error
-            if (message.startsWith('COMPLETE:') || message.startsWith('ERROR:')) {
+            if (isTerminalMessage(message)) {
               clearInterval(interval);
               controller.close();
               // Clean up after a delay

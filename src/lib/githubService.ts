@@ -1,18 +1,9 @@
 import { FileChange } from './types';
+import { isValidGitHubUsername, sanitizeRelativePath } from './validation';
+import { buildRepoName } from './naming';
 
 const GITHUB_API = 'https://api.github.com';
 
-function sanitizeFilePath(filePath: string): string {
-  const normalized = filePath.replace(/^\/+/, '').replace(/\.\.\//g, '');
-  if (normalized.startsWith('..') || normalized.includes('/../')) {
-    throw new Error(`Invalid file path: ${filePath}`);
-  }
-  return normalized;
-}
-
-function validateUsername(username: string): boolean {
-  return /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/.test(username);
-}
 
 export interface GitHubRepoResult {
   success: boolean;
@@ -34,7 +25,7 @@ export async function createGitHubRepo(
     return { success: false, error: 'No files provided' };
   }
 
-  if (!validateUsername(username)) {
+  if (!isValidGitHubUsername(username)) {
     return { success: false, error: 'Invalid username' };
   }
 
@@ -48,16 +39,7 @@ export async function createGitHubRepo(
   }
 
   try {
-    // Generate unique repo name
-    const timestamp = Date.now();
-    const sanitizedProjectName = projectName
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '-')
-      .replace(/-+/g, '-')
-      .substring(0, 50);
-    const repoName = `echome-${sanitizedProjectName}-${timestamp}`;
-
-    console.log(`📦 Creating GitHub repo: ${repoName}`);
+    const repoName = buildRepoName(projectName);
 
     // Step 1: Create the repository
     const createRepoResponse = await fetch(`${GITHUB_API}/user/repos`, {
@@ -85,13 +67,10 @@ export async function createGitHubRepo(
     const cloneUrl = repoData.clone_url;
     const defaultBranch = repoData.default_branch || 'main';
 
-    console.log(`✅ Repo created: ${repoUrl}`);
-
     // Wait a moment for GitHub to initialize the repo
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Step 2: Get the latest commit SHA (from the auto-initialized commit)
-    console.log(`🔍 Getting base tree...`);
     const refResponse = await fetch(
       `${GITHUB_API}/repos/${username}/${repoName}/git/ref/heads/${defaultBranch}`,
       {
@@ -128,7 +107,6 @@ export async function createGitHubRepo(
     const baseTreeSha = commitData.tree.sha;
 
     // Step 4: Create blobs for all files
-    console.log(`📝 Creating blobs for ${files.length} files...`);
     const tree = [];
 
     for (const file of files) {
@@ -152,24 +130,21 @@ export async function createGitHubRepo(
       );
 
       if (!blobResponse.ok) {
-        console.warn(`⚠️  Failed to create blob for ${file.path}`);
+        console.warn(`Failed to create blob for ${file.path}`);
         continue;
       }
 
       const blobData = await blobResponse.json();
 
       tree.push({
-        path: sanitizeFilePath(file.path),
+        path: sanitizeRelativePath(file.path),
         mode: '100644', // Regular file
         type: 'blob',
         sha: blobData.sha,
       });
     }
 
-    console.log(`✅ Created ${tree.length} blobs`);
-
     // Step 5: Create new tree
-    console.log(`🌳 Creating tree...`);
     const treeResponse = await fetch(
       `${GITHUB_API}/repos/${username}/${repoName}/git/trees`,
       {
@@ -195,7 +170,6 @@ export async function createGitHubRepo(
     const newTreeSha = treeData.sha;
 
     // Step 6: Create commit
-    console.log(`💾 Creating commit...`);
     const newCommitResponse = await fetch(
       `${GITHUB_API}/repos/${username}/${repoName}/git/commits`,
       {
@@ -222,7 +196,6 @@ export async function createGitHubRepo(
     const newCommitSha = newCommitData.sha;
 
     // Step 7: Update reference
-    console.log(`🔄 Updating branch reference...`);
     const updateRefResponse = await fetch(
       `${GITHUB_API}/repos/${username}/${repoName}/git/refs/heads/${defaultBranch}`,
       {
@@ -244,8 +217,6 @@ export async function createGitHubRepo(
       throw new Error(`Failed to update ref: ${error}`);
     }
 
-    console.log(`✅ Successfully pushed ${files.length} files to GitHub`);
-
     return {
       success: true,
       repoUrl,
@@ -253,27 +224,10 @@ export async function createGitHubRepo(
       repoName,
     };
   } catch (error) {
-    console.error('❌ GitHub repo creation failed:', error);
+    console.error('GitHub repo creation failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
-}
-
-/**
- * Generate a project name from the first user message or default
- */
-export function generateProjectName(prompt?: string): string {
-  if (!prompt) return 'project';
-
-  // Extract key words from prompt
-  const words = prompt
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(/\s+/)
-    .filter(word => word.length > 3)
-    .slice(0, 3);
-
-  return words.length > 0 ? words.join('-') : 'project';
 }

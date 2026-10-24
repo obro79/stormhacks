@@ -1,5 +1,7 @@
 import { Daytona } from '@daytonaio/sdk';
 import { FileChange } from './types';
+import { sanitizeRelativePath } from './validation';
+import { classifyDevServerLogs } from './serverLogs';
 
 const DAYTONA_API_KEY = process.env.DAYTONA_API_KEY;
 
@@ -15,13 +17,17 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
-// Sanitize file paths to prevent directory traversal attacks
-function sanitizePath(filePath: string): string {
-  const normalized = filePath.replace(/^\/+/, '').replace(/\.\.\//g, '');
-  if (normalized.startsWith('..') || normalized.includes('/../')) {
-    throw new Error(`Invalid file path: ${filePath}`);
+// All calls share one config so DAYTONA_API_URL / DAYTONA_TARGET apply everywhere.
+function getDaytonaClient(): Daytona {
+  if (!DAYTONA_API_KEY) {
+    throw new Error('DAYTONA_API_KEY environment variable is required');
   }
-  return normalized;
+
+  const config: DaytonaConfig = { apiKey: DAYTONA_API_KEY };
+  if (process.env.DAYTONA_API_URL) config.apiUrl = process.env.DAYTONA_API_URL;
+  if (process.env.DAYTONA_TARGET) config.target = process.env.DAYTONA_TARGET;
+
+  return new Daytona(config);
 }
 
 async function waitForServer(url: string, onProgress?: (message: string) => void, maxRetries = 30): Promise<boolean> {
@@ -53,24 +59,7 @@ async function waitForServer(url: string, onProgress?: (message: string) => void
 }
 
 export async function createDaytonaSandbox(files: FileChange[], onProgress?: (message: string) => void): Promise<string> {
-  if (!DAYTONA_API_KEY) {
-    throw new Error('DAYTONA_API_KEY environment variable is required');
-  }
-
-  // Build config object - only include defined values
-  const daytonaConfig: DaytonaConfig = {
-    apiKey: DAYTONA_API_KEY,
-  };
-
-  if (process.env.DAYTONA_API_URL) {
-    daytonaConfig.apiUrl = process.env.DAYTONA_API_URL;
-  }
-
-  if (process.env.DAYTONA_TARGET) {
-    daytonaConfig.target = process.env.DAYTONA_TARGET;
-  }
-
-  const daytona = new Daytona(daytonaConfig);
+  const daytona = getDaytonaClient();
 
   // Create a new sandbox
   let sandbox;
@@ -108,7 +97,7 @@ Original error: ${message}`);
     await sandbox.fs.uploadFiles(
       files.map(file => ({
         source: Buffer.from(file.content),
-        destination: `${rootDir}/${sanitizePath(file.path)}`
+        destination: `${rootDir}/${sanitizeRelativePath(file.path)}`
       }))
     );
     onProgress?.('Files uploaded');
@@ -156,41 +145,15 @@ Original error: ${message}`);
 
       // Read server logs for debugging
       const logsResult = await sandbox.process.executeCommand('cat dev-server.log', rootDir);
-      const logs = logsResult.result || '';
+      const logStatus = classifyDevServerLogs(logsResult.result || '');
 
-      // Check for SUCCESSFUL startup patterns FIRST
-      const serverReady = logs.includes('Ready in') ||
-                          logs.includes('started server on') ||
-                          logs.includes('Compiling');
-
-      if (serverReady) {
+      if (logStatus.status === 'ready') {
         onProgress?.('Server is running!');
-        // Server is up - ignore non-critical errors like fonts/favicon
+      } else if (logStatus.status === 'error') {
+        console.error('Critical server error:', logStatus.error);
+        onProgress?.(`Critical error: ${logStatus.error.substring(0, 100)}`);
+        throw new Error(`Server failed to start: ${logStatus.error}`);
       } else {
-        // Server didn't report ready - check if there are CRITICAL errors
-        const hasCriticalError =
-          logs.includes('EADDRINUSE') ||
-          logs.includes('MODULE_NOT_FOUND') ||
-          logs.includes('Cannot find module') ||
-          logs.includes('Failed to compile') ||
-          logs.includes('Error: listen');
-
-        if (hasCriticalError) {
-          // Extract the critical error
-          const errorLines = logs.split('\n').filter(line =>
-            line.includes('EADDRINUSE') ||
-            line.includes('MODULE_NOT_FOUND') ||
-            line.includes('Cannot find module') ||
-            line.includes('Failed to compile') ||
-            line.includes('Error: listen')
-          );
-          const errorMsg = errorLines[0] || 'Unknown critical error';
-          console.error('Critical server error:', errorMsg);
-          onProgress?.(`Critical error: ${errorMsg.substring(0, 100)}`);
-          throw new Error(`Server failed to start: ${errorMsg}`);
-        }
-
-        // No "Ready" message but no critical errors either - continue anyway
         onProgress?.('Server status unclear, trying preview...');
       }
     }
@@ -209,7 +172,6 @@ Original error: ${message}`);
     if (sandbox) {
       try {
         await sandbox.delete();
-        console.log('Cleaned up sandbox after failure');
       } catch (cleanupError) {
         console.error('Failed to clean up sandbox:', cleanupError);
       }
@@ -219,11 +181,7 @@ Original error: ${message}`);
 }
 
 export async function getSandboxUrl(sandboxId: string): Promise<string> {
-  if (!DAYTONA_API_KEY) {
-    throw new Error('DAYTONA_API_KEY environment variable is required');
-  }
-
-  const daytona = new Daytona({ apiKey: DAYTONA_API_KEY });
+  const daytona = getDaytonaClient();
 
   // Get sandbox
   const sandbox = await daytona.get(sandboxId);
@@ -235,43 +193,14 @@ export async function getSandboxUrl(sandboxId: string): Promise<string> {
 }
 
 export async function deleteDaytonaSandbox(sandboxId: string): Promise<void> {
-  if (!DAYTONA_API_KEY) {
-    throw new Error('DAYTONA_API_KEY environment variable is required');
-  }
-
-  const daytona = new Daytona({ apiKey: DAYTONA_API_KEY });
+  const daytona = getDaytonaClient();
 
   const sandbox = await daytona.get(sandboxId);
   await sandbox.delete();
 }
 
-export async function listAllSandboxes(): Promise<string[]> {
-  if (!DAYTONA_API_KEY) {
-    throw new Error('DAYTONA_API_KEY environment variable is required');
-  }
-
-  const daytona = new Daytona({ apiKey: DAYTONA_API_KEY });
-
-  const response = await daytona.list();
-
-  // Handle different response formats
-  const sandboxes = Array.isArray(response)
-    ? response
-    : (isRecord(response) && Array.isArray(response.sandboxes) ? response.sandboxes : []);
-  return sandboxes.map((s: unknown) => {
-    if (isRecord(s) && typeof s.id === 'string') {
-      return s.id;
-    }
-    return '';
-  }).filter(id => id !== '');
-}
-
 export async function deleteAllSandboxes(): Promise<{ deleted: number; ids: string[] }> {
-  if (!DAYTONA_API_KEY) {
-    throw new Error('DAYTONA_API_KEY environment variable is required');
-  }
-
-  const daytona = new Daytona({ apiKey: DAYTONA_API_KEY });
+  const daytona = getDaytonaClient();
   const response = await daytona.list();
 
   // Handle different response formats
