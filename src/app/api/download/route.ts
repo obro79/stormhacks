@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import { filesStore } from '@/lib/filesStore';
+import { isValidSessionId } from '@/lib/validation';
 import { FileChange } from '@/lib/types';
 
 async function createZipResponse(files: FileChange[], sessionId: string): Promise<NextResponse> {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
   try {
     const { sessionId } = await request.json();
 
-    if (!sessionId || !/^[a-zA-Z0-9_-]{1,64}$/.test(sessionId)) {
+    if (!isValidSessionId(sessionId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid sessionId format' },
         { status: 400 }
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId');
 
-  if (!sessionId || !/^[a-zA-Z0-9_-]{1,64}$/.test(sessionId)) {
+  if (!isValidSessionId(sessionId)) {
     return NextResponse.json(
       { success: false, error: 'Invalid sessionId format' },
       { status: 400 }

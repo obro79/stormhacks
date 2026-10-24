@@ -1,7 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { deleteAllSandboxes } from '@/lib/daytona';
 
-export async function GET() {
+/**
+ * Admin endpoint: delete every Daytona sandbox on the account.
+ * Requires `Authorization: Bearer $CLEANUP_TOKEN`, and is disabled when CLEANUP_TOKEN is unset.
+ */
+export async function POST(request: NextRequest) {
+  const token = process.env.CLEANUP_TOKEN;
+
+  if (!token || request.headers.get('authorization') !== `Bearer ${token}`) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
   try {
     const result = await deleteAllSandboxes();
 

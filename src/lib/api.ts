@@ -2,6 +2,7 @@ import { ClaudeResponse, ClaudeMessage } from './types';
 
 const ANTHROPIC_API_KEY = process.env.CLAUDE_API_KEY;
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const DEFAULT_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514';
 
 export async function callClaude(
   messages: ClaudeMessage[],
@@ -13,16 +14,20 @@ export async function callClaude(
   } = {}
 ): Promise<ClaudeResponse> {
   const {
-    model = 'claude-sonnet-4-20250514',
+    model = DEFAULT_MODEL,
     maxTokens = 8000,
     temperature = 1,
   } = options;
+
+  if (!ANTHROPIC_API_KEY) {
+    throw new Error('CLAUDE_API_KEY environment variable is required');
+  }
 
   const response = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY || '',
+      'x-api-key': ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({

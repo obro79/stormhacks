@@ -16,7 +16,5 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Export storeFiles function for external use
 export function storeFiles(sessionId: string, files: FileChange[]) {
-  console.log(`[filesStore] Storing ${files.length} files for session: ${sessionId}`);
   filesStore.set(sessionId, files);
-  console.log(`[filesStore] Total sessions stored: ${filesStore.size}`, Array.from(filesStore.keys()));
 }
