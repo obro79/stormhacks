@@ -10,8 +10,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Claude](https://img.shields.io/badge/Claude-API-D97757?logo=anthropic&logoColor=white)](https://www.anthropic.com/)
 
-🏆 **1st place overall, StormHacks 2025**
-
 [Demo video](https://www.youtube.com/watch?v=RmVdUAm20Ms) · [Devpost](https://devpost.com/software/echome-ixe6qy) · [Architecture](docs/ARCHITECTURE.md)
 
 </div>
